@@ -8,13 +8,14 @@ import StringIO
 import subprocess
 import os
 import time
+import threading
 from datetime import datetime
 from PIL import Image
 
 class Camera:
 
     # motion detection settings:
-    threshold = 64                             # how much a pixel change to be marked as changed
+    threshold = 64                              # how much a pixel change to be marked as changed
     sensitivity = 2000                          # how many changed pixels to trigger capture an image
     filepath = "/home/pi/smartHome/capture"     # location of folder to save photos and vedios
 
@@ -29,6 +30,8 @@ class Camera:
     buffer1 = None
     buffer2 = None
 
+    mutex = threading.Lock()
+
     def __init__(self):
         self.buffer1 = self.Camera_captureTestImage()
 
@@ -36,7 +39,9 @@ class Camera:
         command = "raspistill -w %s -h %s -t 700 -e bmp -n -o -" %(self.testWidth, self.testHeight)
         # imageData = io.StringIO()
         imageData = StringIO.StringIO()
+        self.mutex.acquire()
         imageData.write(subprocess.check_output(command, shell=True))
+        self.mutex.release()
         imageData.seek(0)
         im = Image.open(imageData)
         buf = im.load()
@@ -46,8 +51,11 @@ class Camera:
     def Camera_saveImage(self):
         time = datetime.now()
         filename = self.filepath + "/" + "IMG-%04d%02d%02d-%02d%02d%02d.jpg" %(time.year, time.month, time.day, time.hour, time.minute, time.second)
+        self.mutex.acquire()
         subprocess.call("raspistill -w %s -h %s -t 700 -e jpg -q %s -n -o %s" %(self.saveWidth, self.saveHeight, self.saveQuality, filename), shell=True)
-        print("save %s success" %filename)
+        self.mutex.release()
+        print("save success %s" %filename)
+        return filename
 
     def Camera_checkMotion(self):
         changedPixels = 0
@@ -58,7 +66,6 @@ class Camera:
                 if pixdiff > self.threshold:
                     changedPixels += 1
             if (changedPixels > self.sensitivity): # scan one line of image then check sensitivity for movement
-                print("changedPixels %s" %changedPixels)
                 self.buffer1 = self.buffer2
                 return True
         self.buffer1 = self.buffer2

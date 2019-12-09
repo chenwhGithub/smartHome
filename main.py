@@ -3,6 +3,9 @@
 
 import signal
 import time
+import threading
+import itchat
+from itchat.content import TEXT
 import Motor
 import Camera
 
@@ -13,16 +16,31 @@ def handler(signalnum, frame):
     print("exit procedure")
     exit(0)
 
-if __name__ == '__main__':
-    signal.signal(signal.SIGINT, handler) # Ctrl + C
-    print("begin procedure")
-    motor.Motor_forward(90)
-    motor.Motor_stop()
-    # motor.Motor_backward(90)
-    # motor.Motor_stop()
-    print("begin motion detect")
+@itchat.msg_register([TEXT])
+def text_reply(msg):
+    recv = msg.text
+    if recv == "P":
+        fileName = camera.Camera_saveImage()
+        itchat.send('@img@%s' %fileName, toUserName=msg['FromUserName'])
+        print("send success %s" %fileName)
+
+def recvItChat():
+    itchat.auto_login(enableCmdQR=2)
+    itchat.run()
+
+def motionDetect():
     while (True):
         isMoved = camera.Camera_checkMotion()
         if isMoved:
             camera.Camera_saveImage()
         time.sleep(1)
+
+if __name__ == '__main__':
+    print("begin procedure")
+    signal.signal(signal.SIGINT, handler) # Ctrl + C
+
+    itChatThreading = threading.Thread(target=recvItChat)
+    itChatThreading.start()
+
+    motionDetectThreading = threading.Thread(target=motionDetect)
+    motionDetectThreading.start()
