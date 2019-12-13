@@ -71,3 +71,5 @@ class Camera:
         self.buffer1 = self.buffer2
         return False
 
+    def Camera_waitProcessDone(self):
+        self.mutex.acquire()

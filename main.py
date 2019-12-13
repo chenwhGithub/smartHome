@@ -1,6 +1,5 @@
 #!/usr/bin/env python
 # -*- coding: utf8 -*-
-
 import signal
 import time
 import threading
@@ -12,8 +11,9 @@ import Camera
 motor = Motor.Motor()
 camera = Camera.Camera()
 
-def handler(signalnum, frame):
-    print("exit procedure")
+def handler_sigint(signalnum, frame):
+    camera.Camera_waitProcessDone()
+    print("procedure exit")
     exit(0)
 
 @itchat.msg_register([TEXT])
@@ -29,18 +29,17 @@ def recvItChat():
     itchat.run()
 
 def motionDetect():
-    while (True):
+    while True:
         isMoved = camera.Camera_checkMotion()
         if isMoved:
             camera.Camera_saveImage()
         time.sleep(1)
 
 if __name__ == '__main__':
-    print("begin procedure")
-    signal.signal(signal.SIGINT, handler) # Ctrl + C
+    print("procedure begin")
+    signal.signal(signal.SIGINT, handler_sigint) # Ctrl + C
 
     itChatThreading = threading.Thread(target=recvItChat)
     itChatThreading.start()
-
     motionDetectThreading = threading.Thread(target=motionDetect)
     motionDetectThreading.start()
