@@ -3,6 +3,9 @@
 # www.raspberrypi.org/phpBB3/viewtopic.php?f=43&t=45235
 # install PIL: "sudo apt-get install python-imaging-tk"
 
+# $sudo apt-get install gpac
+# $sudo MP4Box -add filename.h264 filename.mp4
+
 # import io
 import StringIO
 import subprocess
@@ -35,6 +38,27 @@ class Camera:
     def __init__(self):
         self.buffer1 = self.Camera_captureTestImage()
 
+    def Camera_saveImage(self):
+        time = datetime.now()
+        filename = self.filepath + "/" + "IMG-%04d%02d%02d-%02d%02d%02d.jpg" %(time.year, time.month, time.day, time.hour, time.minute, time.second)
+        self.mutex.acquire()
+        subprocess.call("raspistill -w %s -h %s -t 700 -e jpg -q %s -n -o %s" %(self.saveWidth, self.saveHeight, self.saveQuality, filename), shell=True)
+        self.mutex.release()
+        print("save success %s" %filename)
+        return filename
+
+    def Camera_saveVideo(self, mSecond):
+        time = datetime.now()
+        filenameH264 = self.filepath + "/" + "VID-%04d%02d%02d-%02d%02d%02d.h264" %(time.year, time.month, time.day, time.hour, time.minute, time.second)
+        self.mutex.acquire()
+        subprocess.call("raspivid -t %s -b 3000000 -o %s" %(mSecond, filenameH264), shell=True) # block mode
+        self.mutex.release()
+        filenameMp4 = self.filepath + "/" + "VID-%04d%02d%02d-%02d%02d%02d.mp4" %(time.year, time.month, time.day, time.hour, time.minute, time.second)
+        subprocess.call("MP4Box -add %s %s" %(filenameH264, filenameMp4), shell=True)
+        os.remove(filenameH264)
+        print("save success %s" %filenameMp4)
+        return filenameMp4
+
     def Camera_captureTestImage(self):
         command = "raspistill -w %s -h %s -t 700 -e bmp -n -o -" %(self.testWidth, self.testHeight)
         # imageData = io.StringIO()
@@ -47,15 +71,6 @@ class Camera:
         buf = im.load()
         imageData.close()
         return buf
-
-    def Camera_saveImage(self):
-        time = datetime.now()
-        filename = self.filepath + "/" + "IMG-%04d%02d%02d-%02d%02d%02d.jpg" %(time.year, time.month, time.day, time.hour, time.minute, time.second)
-        self.mutex.acquire()
-        subprocess.call("raspistill -w %s -h %s -t 700 -e jpg -q %s -n -o %s" %(self.saveWidth, self.saveHeight, self.saveQuality, filename), shell=True)
-        self.mutex.release()
-        print("save success %s" %filename)
-        return filename
 
     def Camera_checkMotion(self):
         changedPixels = 0

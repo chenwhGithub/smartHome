@@ -15,7 +15,7 @@ class Motor:
     IN2 = 12
     IN3 = 13
     IN4 = 15
-    DELAY = 0.01
+    DELAY = 0.015
 
     def __init__(self):
         GPIO.setwarnings(False)
