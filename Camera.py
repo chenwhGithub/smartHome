@@ -42,7 +42,7 @@ class Camera:
         time = datetime.now()
         filename = self.filepath + "/" + "IMG-%04d%02d%02d-%02d%02d%02d.jpg" %(time.year, time.month, time.day, time.hour, time.minute, time.second)
         self.mutex.acquire()
-        subprocess.call("raspistill -w %s -h %s -t 700 -e jpg -q %s -n -o %s" %(self.saveWidth, self.saveHeight, self.saveQuality, filename), shell=True)
+        subprocess.call("raspistill -w %s -h %s -rot 270 -t 700 -e jpg -q %s -n -o %s" %(self.saveWidth, self.saveHeight, self.saveQuality, filename), shell=True)
         self.mutex.release()
         print("save success %s" %filename)
         return filename
@@ -51,7 +51,7 @@ class Camera:
         time = datetime.now()
         filenameH264 = self.filepath + "/" + "VID-%04d%02d%02d-%02d%02d%02d.h264" %(time.year, time.month, time.day, time.hour, time.minute, time.second)
         self.mutex.acquire()
-        subprocess.call("raspivid -t %s -b 3000000 -o %s" %(mSecond, filenameH264), shell=True) # block mode
+        subprocess.call("raspivid -t %s -b 3000000 -rot 270 -o %s" %(mSecond, filenameH264), shell=True) # block mode
         self.mutex.release()
         filenameMp4 = self.filepath + "/" + "VID-%04d%02d%02d-%02d%02d%02d.mp4" %(time.year, time.month, time.day, time.hour, time.minute, time.second)
         subprocess.call("MP4Box -add %s %s" %(filenameH264, filenameMp4), shell=True)

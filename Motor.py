@@ -15,7 +15,7 @@ class Motor:
     IN2 = 12
     IN3 = 13
     IN4 = 15
-    DELAY = 0.015
+    DELAY = 0.02
 
     def __init__(self):
         GPIO.setwarnings(False)
@@ -34,8 +34,8 @@ class Motor:
     # step angle, one pulse(1/8 beats): 5.625=360/64
     # 5.625*2*4=45, 45*8=360, 360*64=one circle
     # one time for loop: 5.625*2*4/64=0.7
-    def Motor_forward(self, angles):
-        loops = int(angles/0.7)
+    def Motor_forward(self, angle):
+        loops = int(angle/0.7)
         for i in range(loops):
             self.__SetStep(1, 0, 0, 0)
             time.sleep(self.DELAY)
@@ -46,8 +46,8 @@ class Motor:
             self.__SetStep(0, 0, 0, 1)
             time.sleep(self.DELAY)
 
-    def Motor_backward(self, angles):
-        loops = int(angles/0.7)
+    def Motor_backward(self, angle):
+        loops = int(angle/0.7)
         for i in range(loops):
             self.__SetStep(0, 0, 0, 1)
             time.sleep(self.DELAY)
