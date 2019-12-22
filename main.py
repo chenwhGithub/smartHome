@@ -9,6 +9,10 @@ import Motor
 import Camera
 import re
 
+cameraPos = 0 # camera position
+CAMERA_MAX_LEFT = -120
+CAMERA_MAX_RIGHT = 120
+
 motor = Motor.Motor()
 camera = Camera.Camera()
 
@@ -35,26 +39,37 @@ def motorBackwardThread(angle):
 
 @itchat.msg_register([TEXT])
 def text_reply(msg):
+    global cameraPos
     recvMsg = msg.text
     sender = msg['FromUserName']
     if (recvMsg == "P") or (recvMsg == "p"):
         saveAndSendImage(sender)
     elif (recvMsg == "V") or (recvMsg == "v"):
         itchat.send('please wait...', toUserName=sender)
-        saveAndSendVideo(sender, 5000)
+        saveAndSendVideo(sender, 5000) # default video 5s
     else:
-        pattern = re.compile(r"(L|l|R|r)([1-9][0-9]?)\Z") # l50 or r30
+        pattern = re.compile(r"(L|l|R|r)([1-9][0-9]?)\Z")
         matchObjs = pattern.match(recvMsg)
         if matchObjs:
             angle = int(matchObjs.group(2))
             if (matchObjs.group(1) == "l") or (matchObjs.group(1) == "L"):
-                t1 = threading.Thread(target=motorForwardThread, args=(angle,))
-                t1.start()
+                if (cameraPos > CAMERA_MAX_LEFT):
+                    if (cameraPos - angle < CAMERA_MAX_LEFT):
+                        angle = cameraPos - CAMERA_MAX_LEFT
+                    t1 = threading.Thread(target=motorForwardThread, args=(angle,))
+                    t1.start()
+                    cameraPos -= angle
+                    itchat.send('please wait...', toUserName=sender)
+                    saveAndSendVideo(sender, angle*115) # 0.02*4*(angle/0.7)*1000
             else:
-                t2 = threading.Thread(target=motorBackwardThread, args=(angle,))
-                t2.start()
-            itchat.send('please wait...', toUserName=sender)
-            saveAndSendVideo(sender, angle*115) # 0.02*4*(angle/0.7)*1000
+                if (cameraPos < CAMERA_MAX_RIGHT):
+                    if (cameraPos + angle > CAMERA_MAX_RIGHT):
+                        angle = CAMERA_MAX_RIGHT - cameraPos
+                    t2 = threading.Thread(target=motorBackwardThread, args=(angle,))
+                    t2.start()
+                    cameraPos += angle
+                    itchat.send('please wait...', toUserName=sender)
+                    saveAndSendVideo(sender, angle*115) # 0.02*4*(angle/0.7)*1000
 
 def itChatThread():
     itchat.auto_login(enableCmdQR=2, hotReload=True)
@@ -69,7 +84,7 @@ def motionDetectThread():
 
 if __name__ == '__main__':
     print("procedure begin")
-    signal.signal(signal.SIGINT, handler_sigint) # Ctrl + C
+    signal.signal(signal.SIGINT, handler_sigint)
 
     itChatThreading = threading.Thread(target=itChatThread)
     itChatThreading.start()
