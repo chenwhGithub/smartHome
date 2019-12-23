@@ -3,11 +3,12 @@
 import signal
 import time
 import threading
+import re
 import itchat
 from itchat.content import TEXT
 import Motor
 import Camera
-import re
+import Hcsr04
 
 cameraPos = 0 # camera position
 CAMERA_MAX_LEFT = -120
@@ -15,6 +16,7 @@ CAMERA_MAX_RIGHT = 120
 
 motor = Motor.Motor()
 camera = Camera.Camera()
+hcsr04 = Hcsr04.Hcsr04()
 
 def handler_sigint(signalnum, frame):
     camera.Camera_waitProcessDone()
@@ -82,6 +84,12 @@ def motionDetectThread():
             camera.Camera_saveImage()
         time.sleep(2)
 
+def distanceThread():
+    while True:
+        distance = hcsr04.HCSR04_getDistance()
+        print("distance(cm): %d" %distance)
+        time.sleep(2)
+
 if __name__ == '__main__':
     print("procedure begin")
     signal.signal(signal.SIGINT, handler_sigint)
@@ -90,3 +98,5 @@ if __name__ == '__main__':
     itChatThreading.start()
     motionDetectThreading = threading.Thread(target=motionDetectThread)
     motionDetectThreading.start()
+    distanceThreading = threading.Thread(target=distanceThread)
+    distanceThreading.start()
