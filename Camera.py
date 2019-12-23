@@ -30,19 +30,31 @@ class Camera:
     # test-image settings
     testWidth   = 100
     testHeight  = 75
-    buffer1 = None
-    buffer2 = None
-
-    mutex = threading.Lock()
 
     def __init__(self):
-        self.buffer1 = self.Camera_captureTestImage()
+        # self.buffer1 = self.__captureTestImage()
+        self.buffer1 = None
+        self.buffer2 = None
+        self.mutex = threading.Lock()
+
+    def __captureTestImage(self):
+        command = "raspistill -w %s -h %s -t 700 -e bmp -n -o -" %(self.testWidth, self.testHeight)
+        # imageData = io.StringIO()
+        imageData = StringIO.StringIO()
+        self.mutex.acquire()
+        imageData.write(subprocess.check_output(command, shell=True))
+        self.mutex.release()
+        imageData.seek(0)
+        im = Image.open(imageData)
+        buf = im.load()
+        imageData.close()
+        return buf
 
     def Camera_saveImage(self):
         time = datetime.now()
         filename = self.filepath + "/" + "IMG-%04d%02d%02d-%02d%02d%02d.jpg" %(time.year, time.month, time.day, time.hour, time.minute, time.second)
         self.mutex.acquire()
-        subprocess.call("raspistill -w %s -h %s -rot 270 -t 700 -e jpg -q %s -n -o %s" %(self.saveWidth, self.saveHeight, self.saveQuality, filename), shell=True)
+        subprocess.call("raspistill -w %s -h %s -rot 270 -e jpg -q %s -n -o %s" %(self.saveWidth, self.saveHeight, self.saveQuality, filename), shell=True)
         self.mutex.release()
         print("save success %s" %filename)
         return filename
@@ -59,22 +71,9 @@ class Camera:
         print("save success %s" %filenameMp4)
         return filenameMp4
 
-    def Camera_captureTestImage(self):
-        command = "raspistill -w %s -h %s -t 700 -e bmp -n -o -" %(self.testWidth, self.testHeight)
-        # imageData = io.StringIO()
-        imageData = StringIO.StringIO()
-        self.mutex.acquire()
-        imageData.write(subprocess.check_output(command, shell=True))
-        self.mutex.release()
-        imageData.seek(0)
-        im = Image.open(imageData)
-        buf = im.load()
-        imageData.close()
-        return buf
-
     def Camera_checkMotion(self):
         changedPixels = 0
-        self.buffer2 = self.Camera_captureTestImage()
+        self.buffer2 = self.__captureTestImage()
         for x in xrange(0, self.testWidth):
             for y in xrange(0, self.testHeight):
                 pixdiff = abs(self.buffer1[x,y][1] - self.buffer2[x,y][1]) # just check green channel as it's the highest quality channel
@@ -85,6 +84,3 @@ class Camera:
                 return True
         self.buffer1 = self.buffer2
         return False
-
-    def Camera_waitProcessDone(self):
-        self.mutex.acquire()
