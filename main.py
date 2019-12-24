@@ -19,6 +19,10 @@ camera = Camera.Camera()
 hcsr04 = Hcsr04.Hcsr04()
 
 def handler_sigint(signalnum, frame):
+    if (cameraPos < 0):
+        motor.Motor_backward(0 - cameraPos)
+    if (cameraPos > 0):
+        motor.Motor_forward(cameraPos)
     print("procedure exit")
     exit(0)
 
@@ -95,7 +99,7 @@ if __name__ == '__main__':
 
     itChatThreading = threading.Thread(target=itChatThread)
     itChatThreading.start()
-    # motionDetectThreading = threading.Thread(target=motionDetectThread)
-    # motionDetectThreading.start()
+    motionDetectThreading = threading.Thread(target=motionDetectThread)
+    motionDetectThreading.start()
     distanceThreading = threading.Thread(target=distanceThread)
     distanceThreading.start()

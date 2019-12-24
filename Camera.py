@@ -32,8 +32,7 @@ class Camera:
 
     def __init__(self):
         self.mutex = threading.Lock()
-        # self.buffer1 = self.__captureTestImage()
-        self.buffer1 = None
+        self.buffer1 = self.__captureTestImage()
         self.buffer2 = None
 
     def __captureTestImage(self):
@@ -72,8 +71,8 @@ class Camera:
     def Camera_checkMotion(self):
         changedPixels = 0
         self.buffer2 = self.__captureTestImage()
-        for x in xrange(0, self.testWidth):
-            for y in xrange(0, self.testHeight):
+        for x in range(self.testWidth):
+            for y in range(self.testHeight):
                 pixdiff = abs(self.buffer1[x,y][1] - self.buffer2[x,y][1]) # just check green channel as it's the highest quality channel
                 if pixdiff > self.threshold:
                     changedPixels += 1
