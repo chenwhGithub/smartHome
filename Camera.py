@@ -6,8 +6,7 @@
 # $sudo apt-get install gpac
 # $sudo MP4Box -add filename.h264 filename.mp4
 
-# import io
-import StringIO
+from io import BytesIO
 import subprocess
 import os
 import time
@@ -32,15 +31,14 @@ class Camera:
     testHeight  = 75
 
     def __init__(self):
+        self.mutex = threading.Lock()
         # self.buffer1 = self.__captureTestImage()
         self.buffer1 = None
         self.buffer2 = None
-        self.mutex = threading.Lock()
 
     def __captureTestImage(self):
         command = "raspistill -w %s -h %s -t 700 -e bmp -n -o -" %(self.testWidth, self.testHeight)
-        # imageData = io.StringIO()
-        imageData = StringIO.StringIO()
+        imageData = BytesIO()
         self.mutex.acquire()
         imageData.write(subprocess.check_output(command, shell=True))
         self.mutex.release()
