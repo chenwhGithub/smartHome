@@ -3,13 +3,15 @@
 
 # sudo apt-get install python3-pyaudio
 # sudo pip3 install baidu-aip
-# apt-get install ffmpeg libavcodec-extra / pip3 install ffmpy3
-# pip3 install pydub # depend with ffmpeg
+# sudo pip3 install ffmpy
+# sudo apt-get install ffmpeg
+# sudo pip3 install pydub
 
 import wave
 from pyaudio import PyAudio, paInt16
 from aip import AipSpeech
-from pydub import AudioSegment, FFmpeg
+from pydub import AudioSegment
+from ffmpy import FFmpeg
 import requests
 import json
 import os
@@ -44,7 +46,7 @@ class Speech:
     def __del__(self):
         self.pa.terminate()
 
-    # output wav file
+    # output-wav
     def Speech_recordAudio(self, recordSeconds):
         print("please say something")
         stream = self.pa.open(format=self.record_format, channels=self.record_channels, rate=self.record_rate,
@@ -67,11 +69,11 @@ class Speech:
         print("record success %s" %filename)
         return filename
 
-    # input wav file
+    # input-wav
     def Speech_playAudio(self, filename):
         stream = self.pa.open(format=self.record_format, channels=self.record_channels, rate=self.record_rate,
                               output=True, frames_per_buffer=self.record_framePerBuf)
-        wf = wave.open(filename, 'rb') # wav
+        wf = wave.open(filename, 'rb')
         data = wf.readframes(self.record_framePerBuf)
         while data != '':
             stream.write(data)
@@ -80,7 +82,7 @@ class Speech:
         stream.close()
         wf.close()
 
-    # input wav/pcm file, format: "wav/pcm"
+    # input-wav/pcm, format-"wav/pcm"
     def Speech_getAsr(self, filename, format):
         try:
             with open(filename, 'rb') as fp:
@@ -92,7 +94,7 @@ class Speech:
             print("Speech_getAsr error")
             return None
 
-    # output wav file
+    # output-wav
     def Speech_getTts(self, text):
         result  = self.client.synthesis(text, 'zh', 1, {'vol': 5, 'per':0,})
         if not isinstance(result, dict):
@@ -136,7 +138,7 @@ class Speech:
             print("Speech_getRespFromTuling error")
             return None
 
-    # input wav file, output mp3 file
+    # input-wav output-mp3
     def Speech_convertWavToMp3(self, sourceFile):
         sound = AudioSegment.from_file(sourceFile, format="wav")
         t = datetime.now()
@@ -144,7 +146,7 @@ class Speech:
         sound.export(desFile, format="mp3")
         return desFile
 
-    # input mp3 file, output wav file
+    # input-mp3 output-wav
     def Speech_convertMp3ToWav(self, sourceFile):
         t = datetime.now()
         desFile = self.record_filepath + "/" + "WAV-%04d%02d%02d-%02d%02d%02d.wav" %(t.year, t.month, t.day, t.hour, t.minute, t.second)
@@ -152,7 +154,7 @@ class Speech:
         sound.export(desFile, format="wav")
         return desFile
 
-    # input mp3 file, output pcm file
+    # input-mp3 output-pcm, for itChat RECORDING process
     def Speech_convertMp3ToPcm(self, sourceFile):
         t = datetime.now()
         desFile = self.record_filepath + "/" + "PCM-%04d%02d%02d-%02d%02d%02d.pcm" %(t.year, t.month, t.day, t.hour, t.minute, t.second)

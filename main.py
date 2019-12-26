@@ -83,12 +83,16 @@ def text_reply(msg):
 
 @itchat.msg_register([RECORDING])
 def recording_reply(msg):
+    sender = msg['FromUserName']
+    if msg['ToUserName'] == 'filehelper': # for test
+        sender = 'filehelper'
     msg['Text'](msg['FileName']) # save mp3 file
     reqFile = speech.Speech_convertMp3ToPcm(msg['FileName'])
     reqText = speech.Speech_getAsr(reqFile, "pcm")
-    respText = speech.Speech_getRespFromTuling(reqText)
-    respFile = speech.Speech_getTts(respText)
-    speech.Speech_playAudio(respFile)
+    itchat.send(reqText, toUserName=sender)
+    # respText = speech.Speech_getRespFromTuling(reqText)
+    # respFile = speech.Speech_getTts(respText)
+    # speech.Speech_playAudio(respFile)
 
 def itChatThread():
     itchat.auto_login(enableCmdQR=2, hotReload=True)
