@@ -5,10 +5,12 @@ import time
 import threading
 import re
 import itchat
-from itchat.content import TEXT
+from itchat.content import TEXT, RECORDING
 import Motor
 import Camera
 import Hcsr04
+import Speech
+
 
 cameraPos = 0 # camera position
 CAMERA_MAX_LEFT = -120
@@ -17,6 +19,7 @@ CAMERA_MAX_RIGHT = 120
 motor = Motor.Motor()
 camera = Camera.Camera()
 hcsr04 = Hcsr04.Hcsr04()
+speech = Speech.Speech()
 
 def handler_sigint(signalnum, frame):
     if (cameraPos < 0):
@@ -47,6 +50,8 @@ def text_reply(msg):
     global cameraPos
     recvMsg = msg.text
     sender = msg['FromUserName']
+    if msg['ToUserName'] == 'filehelper': # for test
+        sender = 'filehelper'
     if (recvMsg == "P") or (recvMsg == "p"):
         saveAndSendImage(sender)
     elif (recvMsg == "V") or (recvMsg == "v"):
@@ -75,6 +80,15 @@ def text_reply(msg):
                     cameraPos += angle
                     itchat.send('please wait...', toUserName=sender)
                     saveAndSendVideo(sender, angle*115) # 0.02*4*(angle/0.7)*1000
+
+@itchat.msg_register([RECORDING])
+def recording_reply(msg):
+    msg['Text'](msg['FileName']) # save mp3 file
+    reqFile = speech.Speech_convertMp3ToPcm(msg['FileName'])
+    reqText = speech.Speech_getAsr(reqFile, "pcm")
+    respText = speech.Speech_getRespFromTuling(reqText)
+    respFile = speech.Speech_getTts(respText)
+    speech.Speech_playAudio(respFile)
 
 def itChatThread():
     itchat.auto_login(enableCmdQR=2, hotReload=True)
