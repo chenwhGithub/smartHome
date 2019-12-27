@@ -6,12 +6,16 @@
 # sudo pip3 install ffmpy
 # sudo apt-get install ffmpeg
 # sudo pip3 install pydub
+# sudo pip3 install SpeechRecognition
+# sudo apt-get install pulseaudio
 
 import wave
 from pyaudio import PyAudio, paInt16
 from aip import AipSpeech
 from pydub import AudioSegment
+from pydub.playback import play
 from ffmpy import FFmpeg
+import speech_recognition as sr
 import requests
 import json
 import os
@@ -24,7 +28,6 @@ class Speech:
     record_format       = paInt16
     record_rate         = 16000
     record_channels     = 1
-    record_width        = 2 # get_sample_size(paInt16)
     record_framePerBuf  = 1024
     record_filepath     = "/home/pi/smartHome/capture"
 
@@ -40,17 +43,20 @@ class Speech:
 
     def __init__(self):
         # os.close(sys.stderr.fileno())
-        self.pa = PyAudio()
         self.client = AipSpeech(self.AIP_APP_ID, self.AIP_API_KEY, self.AIP_SECRET_KEY)
+        self.pa = PyAudio()
+        self.r = sr.Recognizer()
+        self.mic = sr.Microphone(sample_rate=self.record_rate) # format:paInt16(deadcode)
+        with self.mic as source:
+            self.r.adjust_for_ambient_noise(source)
 
     def __del__(self):
         self.pa.terminate()
 
-    # output-wav
-    def Speech_recordAudio(self, recordSeconds):
+    # record from audio to wav
+    def Speech_recordByPyaudio(self, recordSeconds):
         print("please say something")
-        stream = self.pa.open(format=self.record_format, channels=self.record_channels, rate=self.record_rate,
-                              input=True, frames_per_buffer=self.record_framePerBuf)
+        stream = self.pa.open(format=self.record_format, channels=self.record_channels, rate=self.record_rate, input=True, frames_per_buffer=self.record_framePerBuf)
         frames = []
         for i in range(int(self.record_rate/self.record_framePerBuf * recordSeconds)):
             data = stream.read(self.record_framePerBuf)
@@ -62,55 +68,58 @@ class Speech:
         filename = self.record_filepath + "/" + "WAV-%04d%02d%02d-%02d%02d%02d.wav" %(t.year, t.month, t.day, t.hour, t.minute, t.second)
         wf = wave.open(filename, 'wb')
         wf.setnchannels(self.record_channels)
-        wf.setsampwidth(self.record_width)
+        wf.setsampwidth(self.pa.get_sample_size(self.record_format))
         wf.setframerate(self.record_rate)
         wf.writeframes(b''.join(frames))
         wf.close()
-        print("record success %s" %filename)
         return filename
 
-    # input-wav
-    def Speech_playAudio(self, filename):
-        stream = self.pa.open(format=self.record_format, channels=self.record_channels, rate=self.record_rate,
-                              output=True, frames_per_buffer=self.record_framePerBuf)
-        wf = wave.open(filename, 'rb')
-        data = wf.readframes(self.record_framePerBuf)
-        while data != '':
-            stream.write(data)
-            data = wf.readframes(self.record_framePerBuf)
-        stream.stop_stream()
-        stream.close()
-        wf.close()
+    # record from audio to wav
+    def Speech_record(self):
+        print("please say something")
+        with self.mic as source:
+            audio = self.r.listen(source)
 
-    # input-wav/pcm, format-"wav/pcm"
-    def Speech_getAsr(self, filename, format):
+        t = datetime.now()
+        filename = self.record_filepath + "/" + "WAV-%04d%02d%02d-%02d%02d%02d.wav" %(t.year, t.month, t.day, t.hour, t.minute, t.second)
+        with open(filename, "wb") as fp:
+            fp.write(audio.get_wav_data()) # channels:1
+        return filename
+
+    # asr from file to text, fileFormat:"wav"-for record, "pcm"-for itchat RECORDING
+    def Speech_asr(self, fileName, fileFormat):
         try:
-            with open(filename, 'rb') as fp:
+            with open(fileName, 'rb') as fp:
                 data = fp.read()
-            ret = self.client.asr(data, format, 16000, {'dev_pid': 1536, })
+            ret = self.client.asr(data, fileFormat, self.record_rate, {'dev_pid': 1536, })
             text = ret["result"][0]
             return text
         except:
-            print("Speech_getAsr error")
+            print("Speech_asr error")
             return None
 
-    # output-wav
-    def Speech_getTts(self, text):
-        result  = self.client.synthesis(text, 'zh', 1, {'vol': 5, 'per':0,})
+    # tts from text to mp3
+    def Speech_tts(self, text):
+        result = self.client.synthesis(text, 'zh', 1, {'vol':7, 'per':0, 'spd':5, 'pit':5}) # per:0-women 1-man 3-duxiaoyao 4-duyaya
         if not isinstance(result, dict):
             t = datetime.now()
-            filename = self.record_filepath + "/" + "WAV-%04d%02d%02d-%02d%02d%02d.wav" %(t.year, t.month, t.day, t.hour, t.minute, t.second)
+            filename = self.record_filepath + "/" + "MP3-%04d%02d%02d-%02d%02d%02d.mp3" %(t.year, t.month, t.day, t.hour, t.minute, t.second)
             with open(filename, 'wb') as fp:
                 fp.write(result)
-            print("getTts success %s" %filename)
             return filename
         else:
-            print("Speech_getTts error")
+            print("Speech_tts error")
             return None
 
-    def Speech_getRespFromTuling(self, reqText):
+    # play from file to audio, fileFormat:"wav/mp3.."
+    def Speech_play(self, fileName, fileFormat):
+        audio = AudioSegment.from_file(fileName, format=fileFormat)
+        play(audio)
+
+    # get response from text
+    def Speech_tuling(self, reqText):
         req = {
-            "reqType": 0, # 0-text 1-picture 2-audio
+            "reqType": 0, # 0:text 1:picture 2:audio
             "perception": {
                 "inputText": {
                     "text": reqText
@@ -135,32 +144,33 @@ class Speech:
             respText = response_dict["results"][0]["values"]["text"]
             return respText
         except:
-            print("Speech_getRespFromTuling error")
+            print("Speech_tuling error")
             return None
 
-    # input-wav output-mp3
-    def Speech_convertWavToMp3(self, sourceFile):
-        sound = AudioSegment.from_file(sourceFile, format="wav")
-        t = datetime.now()
-        desFile = self.record_filepath + "/" + "MP3-%04d%02d%02d-%02d%02d%02d.mp3" %(t.year, t.month, t.day, t.hour, t.minute, t.second)
-        sound.export(desFile, format="mp3")
-        return desFile
-
-    # input-mp3 output-wav
-    def Speech_convertMp3ToWav(self, sourceFile):
-        t = datetime.now()
-        desFile = self.record_filepath + "/" + "WAV-%04d%02d%02d-%02d%02d%02d.wav" %(t.year, t.month, t.day, t.hour, t.minute, t.second)
-        sound = AudioSegment.from_file(sourceFile, format="mp3")
-        sound.export(desFile, format="wav")
-        return desFile
-
-    # input-mp3 output-pcm, for itChat RECORDING process
-    def Speech_convertMp3ToPcm(self, sourceFile):
+    # convert mp3 to pcm, for itChat RECORDING
+    def Speech_convertMp3ToPcm(self, srcFile):
         t = datetime.now()
         desFile = self.record_filepath + "/" + "PCM-%04d%02d%02d-%02d%02d%02d.pcm" %(t.year, t.month, t.day, t.hour, t.minute, t.second)
         ff = FFmpeg(
-            inputs = {sourceFile: None},
+            inputs = {srcFile: None},
             outputs = {desFile: '-acodec pcm_s16le -f s16le -ac 1 -ar 16000'}
         )
         ff.run()
         return desFile
+
+    # convert from wav to mp3, reserve
+    def Speech_convertWavToMp3(self, srcFile):
+        t = datetime.now()
+        desFile = self.record_filepath + "/" + "MP3-%04d%02d%02d-%02d%02d%02d.mp3" %(t.year, t.month, t.day, t.hour, t.minute, t.second)
+        audio = AudioSegment.from_file(srcFile, format="wav")
+        audio.export(desFile, format="mp3")
+        return desFile
+
+    # convert from mp3 to wav, reserve
+    def Speech_convertMp3ToWav(self, srcFile):
+        t = datetime.now()
+        desFile = self.record_filepath + "/" + "WAV-%04d%02d%02d-%02d%02d%02d.wav" %(t.year, t.month, t.day, t.hour, t.minute, t.second)
+        audio = AudioSegment.from_file(srcFile, format="mp3")
+        audio.export(desFile, format="wav")
+        return desFile
+

@@ -88,11 +88,13 @@ def recording_reply(msg):
         sender = 'filehelper'
     msg['Text'](msg['FileName']) # save mp3 file
     reqFile = speech.Speech_convertMp3ToPcm(msg['FileName'])
-    reqText = speech.Speech_getAsr(reqFile, "pcm")
+    reqText = speech.Speech_asr(reqFile, "pcm")
+    print("reqText: %s" %reqText)
     itchat.send(reqText, toUserName=sender)
-    # respText = speech.Speech_getRespFromTuling(reqText)
-    # respFile = speech.Speech_getTts(respText)
-    # speech.Speech_playAudio(respFile)
+    # respText = speech.Speech_tuling(reqText)
+    # itchat.send(respText, toUserName=sender)
+    # respFile = speech.Speech_tts(respText)
+    # speech.Speech_play(respFile)
 
 def itChatThread():
     itchat.auto_login(enableCmdQR=2, hotReload=True)
@@ -111,6 +113,14 @@ def distanceThread():
         print("distance(cm): %d" %distance)
         time.sleep(2)
 
+def recordThread():
+    while True:
+        recordFile = speech.Speech_record()
+        recordText = speech.Speech_asr(recordFile, "wav")
+        print("recordText: %s" %recordText)
+        ttsFile = speech.Speech_tts(recordText)
+        speech.Speech_play(ttsFile, "mp3")
+
 if __name__ == '__main__':
     print("procedure begin")
     signal.signal(signal.SIGINT, handler_sigint)
@@ -121,3 +131,5 @@ if __name__ == '__main__':
     motionDetectThreading.start()
     distanceThreading = threading.Thread(target=distanceThread)
     distanceThreading.start()
+    recordThreading = threading.Thread(target=recordThread)
+    recordThreading.start()
