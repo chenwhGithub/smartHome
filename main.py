@@ -90,11 +90,9 @@ def recording_reply(msg):
     reqFile = speech.Speech_convertMp3ToPcm(msg['FileName'])
     reqText = speech.Speech_asr(reqFile, "pcm")
     print("reqText: %s" %reqText)
-    itchat.send(reqText, toUserName=sender)
-    # respText = speech.Speech_tuling(reqText)
-    # itchat.send(respText, toUserName=sender)
-    # respFile = speech.Speech_tts(respText)
-    # speech.Speech_play(respFile)
+    respText = speech.Speech_emotibot(reqText)
+    print("respText: %s" %respText)
+    itchat.send(respText, toUserName=sender)
 
 def itChatThread():
     itchat.auto_login(enableCmdQR=2, hotReload=True)
@@ -118,7 +116,9 @@ def recordThread():
         recordFile = speech.Speech_record()
         recordText = speech.Speech_asr(recordFile, "wav")
         print("recordText: %s" %recordText)
-        ttsFile = speech.Speech_tts(recordText)
+        respText = speech.Speech_emotibot(recordText)
+        print("respText: %s" %respText)
+        ttsFile = speech.Speech_tts(respText)
         speech.Speech_play(ttsFile, "mp3")
 
 if __name__ == '__main__':

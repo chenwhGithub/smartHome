@@ -41,6 +41,10 @@ class Speech:
     TULING_API_URL = "http://openapi.tuling123.com/openapi/api/v2"
     TULING_HEADERS = {'Content-Type': 'application/json;charset=UTF-8'}
 
+    # http://console.developer.emotibot.com/api/ApiKey/documentation.php
+    EMOTIBOT_API_ID = "32ee80dddb36f1dc5356517503b3f55e"
+    EMOTIBOT_API_URL = "http://idc.emotibot.com/api/ApiKey/openapi.php"
+
     def __init__(self):
         # os.close(sys.stderr.fileno())
         self.client = AipSpeech(self.AIP_APP_ID, self.AIP_API_KEY, self.AIP_SECRET_KEY)
@@ -145,6 +149,24 @@ class Speech:
             return respText
         except:
             print("Speech_tuling error")
+            return None
+
+    # get response from text
+    def Speech_emotibot(self, reqText):
+        req = {
+            "cmd": "chat",
+            "appid": self.EMOTIBOT_API_ID,
+            "userid": "xiaoming",
+            "text": reqText,
+            "location": "hangzhou"
+        }
+        r = requests.post(self.EMOTIBOT_API_URL, params=req)
+        jsondata = json.loads(r.text)
+        if jsondata['return'] == 0:
+            respText = jsondata.get('data')[0].get('value')
+            return respText
+        else:
+            print("Speech_emotibot error")
             return None
 
     # convert mp3 to pcm, for itChat RECORDING
