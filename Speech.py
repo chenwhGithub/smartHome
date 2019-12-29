@@ -31,7 +31,6 @@ class Speech:
     record_rate         = 16000
     record_channels     = 1
     record_framePerBuf  = 1024
-    record_filepath     = "/home/pi/smartHome/capture"
 
     # https://console.bce.baidu.com/ai/?_=1577239936502&fromai=1#/ai/speech/app/detail~appId=1406406
     AIP_APP_ID = '18101860'
@@ -49,6 +48,7 @@ class Speech:
 
     def __init__(self):
         # os.close(sys.stderr.fileno())
+        self.capturePath = os.path.join(os.path.dirname(os.path.abspath(__file__)), "capture")
         self.client = AipSpeech(self.AIP_APP_ID, self.AIP_API_KEY, self.AIP_SECRET_KEY)
         self.pa = PyAudio()
         self.r = sr.Recognizer()
@@ -71,7 +71,7 @@ class Speech:
         stream.close()
 
         t = datetime.now()
-        filename = self.record_filepath + "/" + "WAV-%04d%02d%02d-%02d%02d%02d.wav" %(t.year, t.month, t.day, t.hour, t.minute, t.second)
+        filename = self.capturePath + "/" + "WAV-%04d%02d%02d-%02d%02d%02d.wav" %(t.year, t.month, t.day, t.hour, t.minute, t.second)
         wf = wave.open(filename, 'wb')
         wf.setnchannels(self.record_channels)
         wf.setsampwidth(self.pa.get_sample_size(self.record_format))
@@ -87,7 +87,7 @@ class Speech:
             audio = self.r.listen(source)
 
         t = datetime.now()
-        filename = self.record_filepath + "/" + "WAV-%04d%02d%02d-%02d%02d%02d.wav" %(t.year, t.month, t.day, t.hour, t.minute, t.second)
+        filename = self.capturePath + "/" + "WAV-%04d%02d%02d-%02d%02d%02d.wav" %(t.year, t.month, t.day, t.hour, t.minute, t.second)
         with open(filename, "wb") as fp:
             fp.write(audio.get_wav_data()) # channels:1
         return filename
@@ -109,7 +109,7 @@ class Speech:
         result = self.client.synthesis(text, 'zh', 1, {'vol':7, 'per':0, 'spd':5, 'pit':5}) # per:0-women 1-man 3-duxiaoyao 4-duyaya
         if not isinstance(result, dict):
             t = datetime.now()
-            filename = self.record_filepath + "/" + "MP3-%04d%02d%02d-%02d%02d%02d.mp3" %(t.year, t.month, t.day, t.hour, t.minute, t.second)
+            filename = self.capturePath + "/" + "MP3-%04d%02d%02d-%02d%02d%02d.mp3" %(t.year, t.month, t.day, t.hour, t.minute, t.second)
             with open(filename, 'wb') as fp:
                 fp.write(result)
             return filename
@@ -174,7 +174,7 @@ class Speech:
     # convert mp3 to pcm, for itChat RECORDING
     def Speech_convertMp3ToPcm(self, srcFile):
         t = datetime.now()
-        desFile = self.record_filepath + "/" + "PCM-%04d%02d%02d-%02d%02d%02d.pcm" %(t.year, t.month, t.day, t.hour, t.minute, t.second)
+        desFile = self.capturePath + "/" + "PCM-%04d%02d%02d-%02d%02d%02d.pcm" %(t.year, t.month, t.day, t.hour, t.minute, t.second)
         ff = FFmpeg(
             inputs = {srcFile: None},
             outputs = {desFile: '-acodec pcm_s16le -f s16le -ac 1 -ar 16000'}
@@ -185,7 +185,7 @@ class Speech:
     # convert from wav to mp3, reserve
     def Speech_convertWavToMp3(self, srcFile):
         t = datetime.now()
-        desFile = self.record_filepath + "/" + "MP3-%04d%02d%02d-%02d%02d%02d.mp3" %(t.year, t.month, t.day, t.hour, t.minute, t.second)
+        desFile = self.capturePath + "/" + "MP3-%04d%02d%02d-%02d%02d%02d.mp3" %(t.year, t.month, t.day, t.hour, t.minute, t.second)
         audio = AudioSegment.from_file(srcFile, format="wav")
         audio.export(desFile, format="mp3")
         return desFile
@@ -193,7 +193,7 @@ class Speech:
     # convert from mp3 to wav, reserve
     def Speech_convertMp3ToWav(self, srcFile):
         t = datetime.now()
-        desFile = self.record_filepath + "/" + "WAV-%04d%02d%02d-%02d%02d%02d.wav" %(t.year, t.month, t.day, t.hour, t.minute, t.second)
+        desFile = self.capturePath + "/" + "WAV-%04d%02d%02d-%02d%02d%02d.wav" %(t.year, t.month, t.day, t.hour, t.minute, t.second)
         audio = AudioSegment.from_file(srcFile, format="mp3")
         audio.export(desFile, format="wav")
         return desFile

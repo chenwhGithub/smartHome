@@ -13,7 +13,7 @@ import Speech
 from snowboy import snowboydecoder
 
 
-cameraPos = 0 # camera position
+cameraPos = 0
 CAMERA_MAX_LEFT = -120
 CAMERA_MAX_RIGHT = 120
 
@@ -57,7 +57,7 @@ def text_reply(msg):
         saveAndSendImage(sender)
     elif (recvMsg == "V") or (recvMsg == "v"):
         itchat.send('please wait...', toUserName=sender)
-        saveAndSendVideo(sender, 5000) # default video 5s
+        saveAndSendVideo(sender, 5000)
     else:
         pattern = re.compile(r"(L|l|R|r)([1-9][0-9]?)\Z")
         matchObjs = pattern.match(recvMsg)
@@ -118,7 +118,7 @@ def recordThread():
         recordText = speech.Speech_asr(recordFile, "wav")
         print("recordText: %s" %recordText)
         if any(word in recordText for word in ["拍照", "拍照片", "拍张照", "拍张照片"]):
-            speech.Speech_play("./conf/camera.wav", "wav")
+            speech.Speech_play("./resources/camera.wav", "wav")
             saveAndSendImage("filehelper")
             respText = "照片拍摄成功，已发送到微信传输助手"
         elif any(word in recordText for word in ["拍视频", "拍个视频"]):
@@ -142,7 +142,7 @@ def audioRecorderCallback(fname):
     recordText = speech.Speech_asr(fname, "wav")
     print("recordText: %s" %recordText)
     if any(word in recordText for word in ["拍照", "拍照片", "拍张照", "拍张照片"]):
-        speech.Speech_play("./conf/camera.wav", "wav")
+        speech.Speech_play("./resources/camera.wav", "wav")
         saveAndSendImage("filehelper")
         respText = "照片拍摄成功，已发送到微信传输助手"
     elif any(word in recordText for word in ["拍视频", "拍个视频"]):
@@ -163,10 +163,10 @@ def audioRecorderCallback(fname):
     speech.Speech_play(ttsFile, "mp3")
 
 def detectedCallback(): # hit hotword
-    speech.Speech_play("./conf/zaine.mp3", "mp3")
+    speech.Speech_play("./resources/zaine.mp3", "mp3")
 
 def snowboyThread():
-    detector = snowboydecoder.HotwordDetector("./conf/xiaohong.pmdl", sensitivity=0.5)
+    detector = snowboydecoder.HotwordDetector("./resources/xiaohong.pmdl", sensitivity=0.5)
     detector.start(detected_callback=detectedCallback, audio_recorder_callback=audioRecorderCallback)
     detector.terminate()
 

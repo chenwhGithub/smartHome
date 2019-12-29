@@ -19,7 +19,6 @@ class Camera:
     # motion detection settings:
     threshold = 64                              # how much a pixel change to be marked as changed
     sensitivity = 2000                          # how many changed pixels to trigger capture an image
-    filepath = "/home/pi/smartHome/capture"     # location of folder to save photos and vedios
 
     # settings of the photos to save
     saveWidth   = 1296
@@ -31,6 +30,7 @@ class Camera:
     testHeight  = 75
 
     def __init__(self):
+        self.capturePath = os.path.join(os.path.dirname(os.path.abspath(__file__)), "capture")
         self.mutex = threading.Lock()
         self.buffer1 = self.__captureTestImage()
         self.buffer2 = None
@@ -49,7 +49,7 @@ class Camera:
 
     def Camera_saveImage(self):
         time = datetime.now()
-        filename = self.filepath + "/" + "IMG-%04d%02d%02d-%02d%02d%02d.jpg" %(time.year, time.month, time.day, time.hour, time.minute, time.second)
+        filename = self.capturePath + "/" + "IMG-%04d%02d%02d-%02d%02d%02d.jpg" %(time.year, time.month, time.day, time.hour, time.minute, time.second)
         self.mutex.acquire()
         subprocess.call("raspistill -w %s -h %s -t 700 -rot 270 -e jpg -q %s -n -o %s" %(self.saveWidth, self.saveHeight, self.saveQuality, filename), shell=True)
         self.mutex.release()
@@ -58,11 +58,11 @@ class Camera:
 
     def Camera_saveVideo(self, mSecond):
         time = datetime.now()
-        filenameH264 = self.filepath + "/" + "VID-%04d%02d%02d-%02d%02d%02d.h264" %(time.year, time.month, time.day, time.hour, time.minute, time.second)
+        filenameH264 = self.capturePath + "/" + "VID-%04d%02d%02d-%02d%02d%02d.h264" %(time.year, time.month, time.day, time.hour, time.minute, time.second)
         self.mutex.acquire()
         subprocess.call("raspivid -t %s -b 3000000 -rot 270 -o %s" %(mSecond, filenameH264), shell=True) # block mode
         self.mutex.release()
-        filenameMp4 = self.filepath + "/" + "VID-%04d%02d%02d-%02d%02d%02d.mp4" %(time.year, time.month, time.day, time.hour, time.minute, time.second)
+        filenameMp4 = self.capturePath + "/" + "VID-%04d%02d%02d-%02d%02d%02d.mp4" %(time.year, time.month, time.day, time.hour, time.minute, time.second)
         subprocess.call("MP4Box -add %s %s" %(filenameH264, filenameMp4), shell=True)
         os.remove(filenameH264)
         print("save success %s" %filenameMp4)
