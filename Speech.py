@@ -83,14 +83,18 @@ class Speech:
     # record from audio to wav
     def Speech_record(self):
         print("please say something")
-        with self.mic as source:
-            audio = self.r.listen(source)
+        try:
+            with self.mic as source:
+                audio = self.r.listen(source)
 
-        t = datetime.now()
-        filename = self.capturePath + "/" + "WAV-%04d%02d%02d-%02d%02d%02d.wav" %(t.year, t.month, t.day, t.hour, t.minute, t.second)
-        with open(filename, "wb") as fp:
-            fp.write(audio.get_wav_data()) # channels:1
-        return filename
+            t = datetime.now()
+            filename = self.capturePath + "/" + "WAV-%04d%02d%02d-%02d%02d%02d.wav" %(t.year, t.month, t.day, t.hour, t.minute, t.second)
+            with open(filename, "wb") as fp:
+                fp.write(audio.get_wav_data()) # channels:1
+            return filename
+        except:
+            print("Speech_record error")
+            return None
 
     # asr from file to text, fileFormat:"wav"-for record, "pcm"-for itchat RECORDING
     def Speech_asr(self, fileName, fileFormat):

@@ -116,38 +116,46 @@ def distanceThread():
 def recordThread():
     while True:
         recordFile = speech.Speech_record()
-        recordText = speech.Speech_asr(recordFile, "wav")
-        print("recordText: %s" %recordText)
-        ttsFile = ""
-        if any(word in recordText for word in ["拍照", "拍照片", "拍张照", "拍张照片"]):
-            speech.Speech_play("./resources/camera.wav", "wav")
-            saveAndSendImage("filehelper")
-            respText = "照片拍摄成功，已发送到微信传输助手"
-            ttsFile = "./resources/savePicDone.mp3"
-        elif any(word in recordText for word in ["拍视频", "拍个视频"]):
-            saveAndSendVideo("filehelper", 5000)
-            respText = "视频拍摄成功，已发送到微信传输助手"
-            ttsFile = "./resources/saveVidDone.mp3"
-        elif any(word in recordText for word in ["左转", "向左"]):
-            angle = re.sub(r'\D', "", recordText)
-            motorForwardThread(int(angle))
-            respText = "左转" + angle + "度完成"
-            ttsFile = speech.Speech_tts(respText)
-        elif any(word in recordText for word in ["右转", "向右"]):
-            angle = re.sub(r'\D', "", recordText)
-            motorBackwardThread(int(angle))
-            respText = "右转" + angle + "度完成"
-            ttsFile = speech.Speech_tts(respText)
-        elif any(word in recordText for word in ["清除缓存", "清空缓存", "清理缓存", "清缓存"]):
-            subprocess.call("rm -f ./capture/*.jpg ./capture/*.mp4 ./capture/*.mp3 ./capture/*.wav ./capture/*.pcm", shell=True)
-            subprocess.call("rm -f ./*.wav ./*.mp3", shell=True)
-            respText = "缓存清理完成"
-            ttsFile = "./resources/cleancacheDone.mp3"
-        else:
-            respText = speech.Speech_emotibot(recordText)
-            ttsFile = speech.Speech_tts(respText)
-        print("respText: %s" %respText)
-        speech.Speech_play(ttsFile, "mp3")
+        if recordFile:
+            recordText = speech.Speech_asr(recordFile, "wav")
+            if recordText:
+                print("recordText: %s" %recordText)
+                if any(word in recordText for word in ["拍照", "拍照片", "拍张照", "拍张照片"]):
+                    speech.Speech_play("./resources/camera.wav", "wav")
+                    saveAndSendImage("filehelper")
+                    respText = "照片拍摄成功，已发送到微信传输助手"
+                    print("respText: %s" %respText)
+                    speech.Speech_play("./resources/savePicDone.mp3", "mp3")
+                elif any(word in recordText for word in ["拍视频", "拍个视频"]):
+                    saveAndSendVideo("filehelper", 5000)
+                    respText = "视频拍摄成功，已发送到微信传输助手"
+                    print("respText: %s" %respText)
+                    speech.Speech_play("./resources/saveVidDone.mp3", "mp3")
+                elif any(word in recordText for word in ["左转", "向左"]):
+                    angle = re.sub(r'\D', "", recordText)
+                    motorForwardThread(int(angle))
+                    respText = "左转" + angle + "度完成"
+                    ttsFile = speech.Speech_tts(respText)
+                    print("respText: %s" %respText)
+                    speech.Speech_play(ttsFile, "mp3")
+                elif any(word in recordText for word in ["右转", "向右"]):
+                    angle = re.sub(r'\D', "", recordText)
+                    motorBackwardThread(int(angle))
+                    respText = "右转" + angle + "度完成"
+                    ttsFile = speech.Speech_tts(respText)
+                    print("respText: %s" %respText)
+                    speech.Speech_play(ttsFile, "mp3")
+                elif any(word in recordText for word in ["清除缓存", "清空缓存", "清理缓存", "清缓存"]):
+                    subprocess.call("rm -f ./capture/*.jpg ./capture/*.mp4 ./capture/*.mp3 ./capture/*.wav ./capture/*.pcm", shell=True)
+                    subprocess.call("rm -f ./*.wav ./*.mp3", shell=True)
+                    respText = "缓存清理完成"
+                    print("respText: %s" %respText)
+                    speech.Speech_play("./resources/cleancacheDone.mp3", "mp3")
+                else:
+                    respText = speech.Speech_emotibot(recordText)
+                    ttsFile = speech.Speech_tts(respText)
+                    print("respText: %s" %respText)
+                    speech.Speech_play(ttsFile, "mp3")
 
 def audioRecorderCallback(fname):
     recordText = speech.Speech_asr(fname, "wav")
