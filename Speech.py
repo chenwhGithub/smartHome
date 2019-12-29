@@ -8,6 +8,8 @@
 # sudo pip3 install pydub
 # sudo pip3 install SpeechRecognition
 # sudo apt-get install pulseaudio
+# sudo apt-get install swig # for training_service.py xiaohong.pmdl
+# sudo apt-get install libatlas-base-dev
 
 import wave
 from pyaudio import PyAudio, paInt16

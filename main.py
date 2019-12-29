@@ -10,6 +10,7 @@ import Motor
 import Camera
 import Hcsr04
 import Speech
+from snowboy import snowboydecoder
 
 
 cameraPos = 0 # camera position
@@ -137,6 +138,38 @@ def recordThread():
         ttsFile = speech.Speech_tts(respText)
         speech.Speech_play(ttsFile, "mp3")
 
+def audioRecorderCallback(fname):
+    recordText = speech.Speech_asr(fname, "wav")
+    print("recordText: %s" %recordText)
+    if any(word in recordText for word in ["拍照", "拍照片", "拍张照", "拍张照片"]):
+        speech.Speech_play("./conf/camera.wav", "wav")
+        saveAndSendImage("filehelper")
+        respText = "照片拍摄成功，已发送到微信传输助手"
+    elif any(word in recordText for word in ["拍视频", "拍个视频"]):
+        saveAndSendVideo("filehelper", 5000)
+        respText = "视频拍摄成功，已发送到微信传输助手"
+    elif any(word in recordText for word in ["左转", "向左"]):
+        angle = re.sub(r'\D', "", recordText)
+        motorForwardThread(int(angle))
+        respText = "左转" + angle + "度完成"
+    elif any(word in recordText for word in ["右转", "向右"]):
+        angle = re.sub(r'\D', "", recordText)
+        motorBackwardThread(int(angle))
+        respText = "右转" + angle + "度完成"
+    else:
+        respText = speech.Speech_emotibot(recordText)
+    print("respText: %s" %respText)
+    ttsFile = speech.Speech_tts(respText)
+    speech.Speech_play(ttsFile, "mp3")
+
+def detectedCallback(): # hit hotword
+    speech.Speech_play("./conf/zaine.mp3", "mp3")
+
+def snowboyThread():
+    detector = snowboydecoder.HotwordDetector("./conf/xiaohong.pmdl", sensitivity=0.5)
+    detector.start(detected_callback=detectedCallback, audio_recorder_callback=audioRecorderCallback)
+    detector.terminate()
+
 if __name__ == '__main__':
     print("procedure begin")
     signal.signal(signal.SIGINT, handler_sigint)
@@ -149,3 +182,5 @@ if __name__ == '__main__':
     distanceThreading.start()
     recordThreading = threading.Thread(target=recordThread)
     recordThreading.start()
+    snowboyThreading = threading.Thread(target=snowboyThread)
+    snowboyThreading.start()
