@@ -4,6 +4,7 @@ import signal
 import time
 import threading
 import re
+import subprocess
 import itchat
 from itchat.content import TEXT, RECORDING
 import Motor
@@ -117,7 +118,7 @@ def recordThread():
         recordFile = speech.Speech_record()
         recordText = speech.Speech_asr(recordFile, "wav")
         print("recordText: %s" %recordText)
-        ttsFile = None
+        ttsFile = ""
         if any(word in recordText for word in ["拍照", "拍照片", "拍张照", "拍张照片"]):
             speech.Speech_play("./resources/camera.wav", "wav")
             saveAndSendImage("filehelper")
@@ -137,6 +138,11 @@ def recordThread():
             motorBackwardThread(int(angle))
             respText = "右转" + angle + "度完成"
             ttsFile = speech.Speech_tts(respText)
+        elif any(word in recordText for word in ["清除缓存", "清空缓存", "清理缓存", "清缓存"]):
+            subprocess.call("rm -f ./capture/*.jpg ./capture/*.mp4 ./capture/*.mp3 ./capture/*.wav ./capture/*.pcm", shell=True)
+            subprocess.call("rm -f ./*.wav ./*.mp3", shell=True)
+            respText = "缓存清理完成"
+            ttsFile = "./resources/cleancacheDone.mp3"
         else:
             respText = speech.Speech_emotibot(recordText)
             ttsFile = speech.Speech_tts(respText)
