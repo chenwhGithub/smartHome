@@ -43,7 +43,7 @@ class Speech:
     TULING_HEADERS = {'Content-Type': 'application/json;charset=UTF-8'}
 
     # http://console.developer.emotibot.com/api/ApiKey/documentation.php
-    EMOTIBOT_API_ID = "32ee80dddb36f1dc5356517503b3f55e"
+    EMOTIBOT_API_ID = "ad470c115e2cd908d166eeea9c742c5b"
     EMOTIBOT_API_URL = "http://idc.emotibot.com/api/ApiKey/openapi.php"
 
     def __init__(self):
@@ -190,7 +190,7 @@ class Speech:
         ff.run()
         return desFile
 
-    # convert from wav to mp3, reserve
+    # convert from wav to mp3, reserved
     def Speech_convertWavToMp3(self, srcFile):
         t = datetime.now()
         desFile = self.capturePath + "/" + "MP3-%04d%02d%02d-%02d%02d%02d.mp3" %(t.year, t.month, t.day, t.hour, t.minute, t.second)
@@ -198,11 +198,10 @@ class Speech:
         audio.export(desFile, format="mp3")
         return desFile
 
-    # convert from mp3 to wav, reserve
+    # convert from mp3 to wav, reserved
     def Speech_convertMp3ToWav(self, srcFile):
         t = datetime.now()
         desFile = self.capturePath + "/" + "WAV-%04d%02d%02d-%02d%02d%02d.wav" %(t.year, t.month, t.day, t.hour, t.minute, t.second)
         audio = AudioSegment.from_file(srcFile, format="mp3")
         audio.export(desFile, format="wav")
         return desFile
-

@@ -32,7 +32,8 @@ class Camera:
     def __init__(self):
         self.capturePath = os.path.join(os.path.dirname(os.path.abspath(__file__)), "capture")
         self.mutex = threading.Lock()
-        self.buffer1 = self.__captureTestImage()
+        # self.buffer1 = self.__captureTestImage()
+        self.buffer1 = None
         self.buffer2 = None
 
     def __captureTestImage(self):
