@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-# -*- coding: gbk -*-
+# -*- coding: utf8 -*-
 import signal
 import time
 import threading
@@ -58,7 +58,7 @@ def text_reply(msg):
         saveAndSendImage(sender)
     elif (recvMsg == "V") or (recvMsg == "v"):
         itchat.send('please wait...', toUserName=sender)
-        saveAndSendVideo(sender, 5000)
+        saveAndSendVideo(sender, 3000)
     else:
         pattern = re.compile(r"(L|l|R|r)([1-9][0-9]?)\Z")
         matchObjs = pattern.match(recvMsg)
@@ -113,73 +113,58 @@ def distanceThread():
         print("distance(cm): %d" %distance)
         time.sleep(2)
 
+def processCommand(command):
+    respText = ""
+    respFile = ""
+    # if any(word in command for word in [u"主页", u"向左", u"向右", u"向上", u"向下", u"确定", u"返回", u"开机", u"关机"]):
+    if any(word in command for word in [u"拍照", u"拍张照"]):
+        speech.Speech_play("./resources/camera.wav", "wav")
+        saveAndSendImage("filehelper")
+        respText = u"照片拍摄成功，已发送到微信传输助手"
+        respFile = "./resources/savePicDone.mp3"
+    elif any(word in command for word in [u"拍视频", u"拍个视频"]):
+        saveAndSendVideo("filehelper", 3000)
+        respText = u"视频拍摄成功，已发送到微信传输助手"
+        respFile = "./resources/saveVidDone.mp3"
+    elif any(word in command for word in ["左转"]):
+        angle = re.sub(r'\D', "", command)
+        motorForwardThread(int(angle))
+        respText = u"左转" + angle + u"度完成"
+        respFile = speech.Speech_tts(respText)
+    elif any(word in command for word in ["右转"]):
+        angle = re.sub(r'\D', "", command)
+        motorBackwardThread(int(angle))
+        respText = u"右转" + angle + u"度完成"
+        respFile = speech.Speech_tts(respText)
+    elif any(word in command for word in [u"清缓存", u"清除缓存", u"清空缓存", u"清理缓存"]):
+        subprocess.call("rm -f ./capture/*.jpg ./capture/*.mp4 ./capture/*.mp3 ./capture/*.wav ./capture/*.pcm", shell=True)
+        subprocess.call("rm -f ./*.wav ./*.mp3", shell=True)
+        respText = u"缓存清理完成"
+        respFile = "./resources/cleancacheDone.mp3"
+    else:
+        respText = speech.Speech_emotibot(command)
+        respFile = speech.Speech_tts(respText)
+
+    return respText, respFile
+
 def recordThread():
     while True:
-        recordFile = speech.Speech_record()
-        if recordFile:
+        try:
+            recordFile = speech.Speech_record()
             recordText = speech.Speech_asr(recordFile, "wav")
-            if recordText:
-                print("recordText: %s" %recordText)
-                if any(word in recordText for word in ["拍照", "拍照片", "拍张照", "拍张照片"]):
-                    speech.Speech_play("./resources/camera.wav", "wav")
-                    saveAndSendImage("filehelper")
-                    respText = "照片拍摄成功，已发送到微信传输助手"
-                    print("respText: %s" %respText)
-                    speech.Speech_play("./resources/savePicDone.mp3", "mp3")
-                elif any(word in recordText for word in ["拍视频", "拍个视频"]):
-                    saveAndSendVideo("filehelper", 5000)
-                    respText = "视频拍摄成功，已发送到微信传输助手"
-                    print("respText: %s" %respText)
-                    speech.Speech_play("./resources/saveVidDone.mp3", "mp3")
-                elif any(word in recordText for word in ["左转", "向左"]):
-                    angle = re.sub(r'\D', "", recordText)
-                    motorForwardThread(int(angle))
-                    respText = "左转" + angle + "度完成"
-                    ttsFile = speech.Speech_tts(respText)
-                    print("respText: %s" %respText)
-                    speech.Speech_play(ttsFile, "mp3")
-                elif any(word in recordText for word in ["右转", "向右"]):
-                    angle = re.sub(r'\D', "", recordText)
-                    motorBackwardThread(int(angle))
-                    respText = "右转" + angle + "度完成"
-                    ttsFile = speech.Speech_tts(respText)
-                    print("respText: %s" %respText)
-                    speech.Speech_play(ttsFile, "mp3")
-                elif any(word in recordText for word in ["清除缓存", "清空缓存", "清理缓存", "清缓存"]):
-                    subprocess.call("rm -f ./capture/*.jpg ./capture/*.mp4 ./capture/*.mp3 ./capture/*.wav ./capture/*.pcm", shell=True)
-                    subprocess.call("rm -f ./*.wav ./*.mp3", shell=True)
-                    respText = "缓存清理完成"
-                    print("respText: %s" %respText)
-                    speech.Speech_play("./resources/cleancacheDone.mp3", "mp3")
-                else:
-                    respText = speech.Speech_emotibot(recordText)
-                    ttsFile = speech.Speech_tts(respText)
-                    print("respText: %s" %respText)
-                    speech.Speech_play(ttsFile, "mp3")
+            speech.Speech_play(snowboydecoder.DETECT_DONG, "wav")
+            print("recordText: %s" %recordText)
+            respText, respFile = processCommand(recordText)
+            if respText:
+                print("respText: %s" %respText)
+            if respFile:
+                speech.Speech_play(respFile, "mp3")
+        except:
+            print("recordThread error: ", sys.exc_info()[0])
 
 def audioRecorderCallback(fname):
     recordText = speech.Speech_asr(fname, "wav")
     print("recordText: %s" %recordText)
-    if any(word in recordText for word in ["拍照", "拍照片", "拍张照", "拍张照片"]):
-        speech.Speech_play("./resources/camera.wav", "wav")
-        saveAndSendImage("filehelper")
-        respText = "照片拍摄成功，已发送到微信传输助手"
-    elif any(word in recordText for word in ["拍视频", "拍个视频"]):
-        saveAndSendVideo("filehelper", 5000)
-        respText = "视频拍摄成功，已发送到微信传输助手"
-    elif any(word in recordText for word in ["左转", "向左"]):
-        angle = re.sub(r'\D', "", recordText)
-        motorForwardThread(int(angle))
-        respText = "左转" + angle + "度完成"
-    elif any(word in recordText for word in ["右转", "向右"]):
-        angle = re.sub(r'\D', "", recordText)
-        motorBackwardThread(int(angle))
-        respText = "右转" + angle + "度完成"
-    else:
-        respText = speech.Speech_emotibot(recordText)
-    print("respText: %s" %respText)
-    ttsFile = speech.Speech_tts(respText)
-    speech.Speech_play(ttsFile, "mp3")
 
 def detectedCallback(): # hit hotword
     speech.Speech_play("./resources/zaine.mp3", "mp3")

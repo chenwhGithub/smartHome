@@ -83,18 +83,17 @@ class Speech:
     # record from audio to wav
     def Speech_record(self):
         print("please say something")
+        t = datetime.now()
+        filename = self.capturePath + "/" + "WAV-%04d%02d%02d-%02d%02d%02d.wav" %(t.year, t.month, t.day, t.hour, t.minute, t.second)
         try:
             with self.mic as source:
                 audio = self.r.listen(source)
-
-            t = datetime.now()
-            filename = self.capturePath + "/" + "WAV-%04d%02d%02d-%02d%02d%02d.wav" %(t.year, t.month, t.day, t.hour, t.minute, t.second)
             with open(filename, "wb") as fp:
                 fp.write(audio.get_wav_data()) # channels:1
             return filename
         except:
-            print("Speech_record error")
-            return None
+            print("Speech_record error: ", sys.exc_info()[0])
+            raise
 
     # asr from file to text, fileFormat:"wav"-for record, "pcm"-for itchat RECORDING
     def Speech_asr(self, fileName, fileFormat):
@@ -105,26 +104,30 @@ class Speech:
             text = ret["result"][0]
             return text
         except:
-            print("Speech_asr error")
-            return None
+            print("Speech_asr error: ", sys.exc_info()[0])
+            raise
 
     # tts from text to mp3
     def Speech_tts(self, text):
-        result = self.client.synthesis(text, 'zh', 1, {'vol':7, 'per':0, 'spd':5, 'pit':5}) # per:0-women 1-man 3-duxiaoyao 4-duyaya
-        if not isinstance(result, dict):
-            t = datetime.now()
-            filename = self.capturePath + "/" + "MP3-%04d%02d%02d-%02d%02d%02d.mp3" %(t.year, t.month, t.day, t.hour, t.minute, t.second)
+        t = datetime.now()
+        filename = self.capturePath + "/" + "MP3-%04d%02d%02d-%02d%02d%02d.mp3" %(t.year, t.month, t.day, t.hour, t.minute, t.second)
+        try:
+            result = self.client.synthesis(text, 'zh', 1, {'vol':7, 'per':0, 'spd':5, 'pit':5}) # per:0-women 1-man 3-duxiaoyao 4-duyaya
             with open(filename, 'wb') as fp:
                 fp.write(result)
             return filename
-        else:
-            print("Speech_tts error")
-            return None
+        except:
+            print("Speech_tts error: ", sys.exc_info()[0])
+            raise
 
     # play from file to audio, fileFormat:"wav/mp3.."
     def Speech_play(self, fileName, fileFormat):
-        audio = AudioSegment.from_file(fileName, format=fileFormat)
-        play(audio)
+        try:
+            audio = AudioSegment.from_file(fileName, format=fileFormat)
+            play(audio)
+        except:
+            print("Speech_play error: ", sys.exc_info()[0])
+            raise
 
     # get response from text
     def Speech_tuling(self, reqText):
@@ -154,8 +157,8 @@ class Speech:
             respText = response_dict["results"][0]["values"]["text"]
             return respText
         except:
-            print("Speech_tuling error")
-            return None
+            print("Speech_tuling error: ", sys.exc_info()[0])
+            raise
 
     # get response from text
     def Speech_emotibot(self, reqText):
@@ -166,14 +169,15 @@ class Speech:
             "text": reqText,
             "location": "hangzhou"
         }
-        r = requests.post(self.EMOTIBOT_API_URL, params=req)
-        jsondata = json.loads(r.text)
-        if jsondata['return'] == 0:
+
+        try:
+            r = requests.post(self.EMOTIBOT_API_URL, params=req)
+            jsondata = json.loads(r.text)
             respText = jsondata.get('data')[0].get('value')
             return respText
-        else:
-            print("Speech_emotibot error")
-            return None
+        except:
+            print("Speech_emotibot error: ", sys.exc_info()[0])
+            raise
 
     # convert mp3 to pcm, for itChat RECORDING
     def Speech_convertMp3ToPcm(self, srcFile):
