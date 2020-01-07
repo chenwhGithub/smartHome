@@ -17,7 +17,7 @@ import Execute
 from snowboy import snowboydecoder
 
 sender = 'filehelper' # for wechat
-snowboyEnable = True
+snowboyEnable = False
 
 motor = Motor.Motor()
 camera = Camera.Camera()
@@ -30,16 +30,16 @@ def handler_sigint(signalnum, frame):
 
 
 # **************** commands callback **************************************
-def commandPic():
+def commandImage():
     speech.Speech_play("./resources/camera.wav", "wav")
     fileName = camera.Camera_saveImage()
     itchat.send('@img@%s' %fileName, toUserName=sender)
-    speech.Speech_play("./resources/savePicDone.mp3", "mp3") # u"照片拍摄成功，已发送到微信传输助手"
+    speech.Speech_play("./resources/saveImageDone.mp3", "mp3") # u"照片拍摄完成，已发送到微信"
 
 def commandVideo():
     fileName = camera.Camera_saveVideo(3000)
     itchat.send('@vid@%s' %fileName, toUserName=sender)
-    speech.Speech_play("./resources/saveVidDone.mp3", "mp3") # u"视频拍摄成功，已发送到微信传输助手"
+    speech.Speech_play("./resources/saveVideoDone.mp3", "mp3") # u"视频拍摄完成，已发送到微信"
 
 def parseAngle(recordText):
     angleStr = re.sub(r'\D', "", recordText) # parse number
@@ -55,9 +55,7 @@ def commandCameraLeft(angle):
     threading.Thread(target=motorForwardThread, args=(angle,)).start()
     fileName = camera.Camera_saveVideo(angle*115) # 0.02*4*(angle/0.7)*1000
     itchat.send('@vid@%s' %fileName, toUserName=sender)
-    respText = u"摄像头左转" + str(angle) + u"度完成"
-    respFile = speech.Speech_tts(respText)
-    speech.Speech_play(respFile, "mp3")
+    speech.Speech_play("./resources/cameraLeftDone.mp3", "mp3") # u"摄像头左转完成"
 
 def commandCameraRight(angle):
     def motorBackwardThread(angle):
@@ -66,9 +64,7 @@ def commandCameraRight(angle):
     threading.Thread(target=motorBackwardThread, args=(angle,)).start()
     fileName = camera.Camera_saveVideo(angle*115) # 0.02*4*(angle/0.7)*1000
     itchat.send('@vid@%s' %fileName, toUserName=sender)
-    respText = u"摄像头右转" + str(angle) + u"度完成"
-    respFile = speech.Speech_tts(respText)
-    speech.Speech_play(respFile, "mp3")
+    speech.Speech_play("./resources/cameraRightDone.mp3", "mp3") # u"摄像头右转完成"
 
 def commandCleanCache():
     subprocess.call("rm -f ./capture/*.jpg ./capture/*.mp4 ./capture/*.mp3 ./capture/*.wav ./capture/*.pcm", shell=True)
@@ -157,9 +153,10 @@ def threadSnowboy():
     detector.start(audio_recorder_callback=cbAudioRecorder)
     detector.terminate()
 
+
 # key: hit words, value: v1-command process callback, v2-parameters parse callback
 commands = {
-(u"拍照", u"拍张照"):(commandPic,),
+(u"拍照", u"拍张照"):(commandImage,),
 (u"拍视频", u"拍个视频"):(commandVideo,),
 (u"左转",):(commandCameraLeft, parseAngle),
 (u"右转",):(commandCameraRight, parseAngle),
