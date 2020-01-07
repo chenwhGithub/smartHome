@@ -17,6 +17,7 @@ import Execute
 from snowboy import snowboydecoder
 
 sender = 'filehelper' # for wechat
+snowboyEnable = True
 
 motor = Motor.Motor()
 camera = Camera.Camera()
@@ -137,7 +138,6 @@ def threadRecord():
             recordFile = speech.Speech_record()
             recordText = speech.Speech_asr(recordFile, "wav")
             print("recordText: %s" %recordText)
-            speech.Speech_play(snowboydecoder.DETECT_DONG, "wav")
             execute.process(recordText)
         except:
             print("threadRecord error: ", sys.exc_info()[0])
@@ -147,18 +147,14 @@ def threadRecord():
 def cbAudioRecorder(recordFile):
     try:
         recordText = speech.Speech_asr(recordFile, "wav")
-        speech.Speech_play(snowboydecoder.DETECT_DONG, "wav")
         print("recordText: %s" %recordText)
         execute.process(recordText)
     except:
         print("cbAudioRecorder error: ", sys.exc_info()[0])
 
-def cbHotwordDetected():
-    speech.Speech_play("./resources/zaine.mp3", "mp3")
-
 def threadSnowboy():
     detector = snowboydecoder.HotwordDetector("./resources/xiaohong.pmdl", sensitivity=0.5)
-    detector.start(detected_callback=cbHotwordDetected, audio_recorder_callback=cbAudioRecorder)
+    detector.start(audio_recorder_callback=cbAudioRecorder)
     detector.terminate()
 
 # key: hit words, value: v1-command process callback, v2-parameters parse callback
@@ -194,5 +190,8 @@ if __name__ == '__main__':
     execute.registerNotHittedProcedure(commandNotHitted)
 
     threading.Thread(target=threadItChat).start()
-    threading.Thread(target=threadRecord).start()
-    threading.Thread(target=threadSnowboy).start()
+    if snowboyEnable:
+        threading.Thread(target=threadSnowboy).start()
+    else:
+        threading.Thread(target=threadRecord).start()
+
