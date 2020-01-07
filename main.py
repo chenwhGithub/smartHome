@@ -9,7 +9,7 @@ import sys
 import subprocess
 import itchat
 from itchat.content import TEXT, RECORDING
-# import serial
+import serial
 import Motor
 import Camera
 import Speech
@@ -19,12 +19,17 @@ from snowboy import snowboydecoder
 sender = 'filehelper' # for wechat
 snowboyEnable = False
 
+ser = serial.Serial("/dev/ttyAMA0", 9600)
+if ser.isOpen():
+    print("/dev/ttyAMA0 open success")
+
 motor = Motor.Motor()
 camera = Camera.Camera()
 speech = Speech.Speech()
 execute = Execute.Execute()
 
 def handler_sigint(signalnum, frame):
+    ser.close()
     print("process exit")
     exit(0)
 
@@ -70,16 +75,24 @@ def commandCleanCache():
     subprocess.call("rm -f ./capture/*.jpg ./capture/*.mp4 ./capture/*.mp3 ./capture/*.wav ./capture/*.pcm", shell=True)
     subprocess.call("rm -f ./*.wav ./*.mp3", shell=True)
     speech.Speech_play("./resources/cleancacheDone.mp3", "mp3") # u"缓存清理完成"
-'''
+
 def parseInfrared(recordText):
     for k, v in tvInfraredCodes.items():
         if k in recordText:
             return v
 
 def comamndTv(*infraredCode): # parse function return tuple
-    for data in infraredCode:
-        serial.send(data)
-'''
+    str = ''
+    for item in infraredCode:
+        temp = hex(item) # 0x6 or 0x6a
+        if len(temp) == 3:
+            str = str + "0" + temp[2]
+        else:
+            str = str + temp[2] + temp[3]
+    sendData = bytes.fromhex(str)
+    print("sendData", sendData) # sendData <class 'bytes'> b'\x01#\xab\xff\n'
+    ser.write(sendData)
+
 def commandNotHitted(recordText):
     respText = speech.Speech_emotibot(recordText)
     respFile = speech.Speech_tts(respText)
@@ -154,28 +167,36 @@ def threadSnowboy():
     detector.terminate()
 
 
+# **************** serial procedure **************************************
+def threadSerial():
+    while True:
+        data = ser.read(5)
+        recvData = data.hex()
+        print("recvData", recvData) # recvData <class 'str'> 0123abff0a
+
+
 # key: hit words, value: v1-command process callback, v2-parameters parse callback
 commands = {
 (u"拍照", u"拍张照"):(commandImage,),
 (u"拍视频", u"拍个视频"):(commandVideo,),
 (u"左转",):(commandCameraLeft, parseAngle),
 (u"右转",):(commandCameraRight, parseAngle),
-(u"清缓存", u"清除缓存", u"清空缓存", u"清理缓存"):(commandCleanCache,)}
-# (u"左边", u"右边", u"上边", u"下边", u"声音大", u"声音调大", u"声音小", u"声音调小",
-# u"确定", u"返回", u"主页", u"开电视", u"关电视", u"关闭电视",):(comamndTv, parseInfrared)}
+(u"清缓存", u"清除缓存", u"清空缓存", u"清理缓存"):(commandCleanCache,),
+(u"左边", u"右边", u"向上", u"上面", u"向下", u"下面", u"声音大", u"声音调大", u"声音小", u"声音调小",
+ u"确定", u"返回", u"主页", u"开电视", u"关电视", u"关闭电视"):(comamndTv, parseInfrared)}
 
 tvInfraredCodes = {
-u"左":(0x01, 0x01, 0x01, 0x01, 0x01),
-u"右":(0x01, 0x01, 0x01, 0x01, 0x01),
-u"上":(0x01, 0x01, 0x01, 0x01, 0x01),
-u"下":(0x01, 0x01, 0x01, 0x01, 0x01),
-u"大":(0x01, 0x01, 0x01, 0x01, 0x01),
-u"小":(0x01, 0x01, 0x01, 0x01, 0x01),
-u"确定":(0x01, 0x01, 0x01, 0x01, 0x01),
-u"返回":(0x01, 0x01, 0x01, 0x01, 0x01),
-u"主页":(0x01, 0x01, 0x01, 0x01, 0x01),
-u"开":(0x01, 0x01, 0x01, 0x01, 0x01),
-u"关":(0x01, 0x01, 0x01, 0x01, 0x01)}
+u"左":(0x01, 0x21, 0xa1, 0xff, 0x0a),
+u"右":(0x02, 0x22, 0xa2, 0xff, 0x0a),
+u"上":(0x03, 0x23, 0xa3, 0xff, 0x0a),
+u"下":(0x04, 0x24, 0xa4, 0xff, 0x0a),
+u"大":(0x05, 0x25, 0xa5, 0xff, 0x0a),
+u"小":(0x06, 0x26, 0xa6, 0xff, 0x0a),
+u"确定":(0x07, 0x27, 0xa7, 0xff, 0x0a),
+u"返回":(0x08, 0x28, 0xa8, 0xff, 0x0a),
+u"主页":(0x09, 0x29, 0xa9, 0xff, 0x0a),
+u"开":(0x0a, 0x2a, 0xaa, 0xff, 0x0a),
+u"关":(0x0b, 0x2b, 0xab, 0xff, 0x0a)}
 
 
 if __name__ == '__main__':
@@ -187,6 +208,7 @@ if __name__ == '__main__':
     execute.registerNotHittedProcedure(commandNotHitted)
 
     threading.Thread(target=threadItChat).start()
+    threading.Thread(target=threadSerial).start()
     if snowboyEnable:
         threading.Thread(target=threadSnowboy).start()
     else:
