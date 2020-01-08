@@ -175,8 +175,8 @@ if __name__ == '__main__':
         (u"左转",):(commandCameraLeft, parseAngle),
         (u"右转",):(commandCameraRight, parseAngle),
         (u"清缓存", u"清除缓存", u"清空缓存", u"清理缓存"):(commandCleanCache,),
-        (u"左边", u"右边", u"向上", u"上面", u"向下", u"下面", u"声音大", u"声音调大", u"声音小", u"声音调小",
-         u"确定", u"返回", u"主页", u"开电视", u"关电视", u"关闭电视"):(comamndTv, parseInfrared)}
+        (u"左边", u"向左", u"往左", u"右边", u"向右", u"往右", u"上边", u"向上", u"往上", u"下边", u"向下", u"往下",
+         u"声音大点", u"声音小点", u"确定", u"返回", u"主页", u"打开电视", u"关闭电视"):(comamndTv, parseInfrared)}
 
     tvInfraredCodes = {
         u"左":(0x01, 0x21, 0xa1, 0xff, 0x0a),
