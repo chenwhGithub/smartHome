@@ -16,23 +16,6 @@ import Speech
 import Execute
 from snowboy import snowboydecoder
 
-sender = 'filehelper' # for wechat
-snowboyEnable = False
-
-ser = serial.Serial("/dev/ttyAMA0", 9600)
-if ser.isOpen():
-    print("/dev/ttyAMA0 open success")
-
-motor = Motor.Motor()
-camera = Camera.Camera()
-speech = Speech.Speech()
-execute = Execute.Execute()
-
-def handler_sigint(signalnum, frame):
-    ser.close()
-    print("process exit")
-    exit(0)
-
 
 # **************** commands callback **************************************
 def commandImage():
@@ -91,7 +74,7 @@ def comamndTv(*infraredCode): # parse function return tuple
             str = str + temp[2] + temp[3]
     sendData = bytes.fromhex(str)
     print("sendData", sendData) # sendData <class 'bytes'> b'\x01#\xab\xff\n'
-    ser.write(sendData)
+    serialAma0.write(sendData)
 
 def commandNotHitted(recordText):
     respText = speech.Speech_emotibot(recordText)
@@ -100,7 +83,7 @@ def commandNotHitted(recordText):
     speech.Speech_play(respFile, "mp3")
 
 
-# **************** itchat procedure **************************************
+# **************** itchat procedure ***************************************
 @itchat.msg_register([TEXT])
 def text_reply(msg):
     global sender
@@ -140,7 +123,7 @@ def threadItChat():
     itchat.run()
 
 
-# **************** record procedure **************************************
+# **************** record procedure ***************************************
 def threadRecord():
     while True:
         try:
@@ -167,48 +150,66 @@ def threadSnowboy():
     detector.terminate()
 
 
-# **************** serial procedure **************************************
+# **************** serial procedure ***************************************
 def threadSerial():
     while True:
-        data = ser.read(5)
+        data = serialAma0.read(5)
         recvData = data.hex()
         print("recvData", recvData) # recvData <class 'str'> 0123abff0a
 
 
-# key: hit words, value: v1-command process callback, v2-parameters parse callback
-commands = {
-(u"拍照", u"拍张照"):(commandImage,),
-(u"拍视频", u"拍个视频"):(commandVideo,),
-(u"左转",):(commandCameraLeft, parseAngle),
-(u"右转",):(commandCameraRight, parseAngle),
-(u"清缓存", u"清除缓存", u"清空缓存", u"清理缓存"):(commandCleanCache,),
-(u"左边", u"右边", u"向上", u"上面", u"向下", u"下面", u"声音大", u"声音调大", u"声音小", u"声音调小",
- u"确定", u"返回", u"主页", u"开电视", u"关电视", u"关闭电视"):(comamndTv, parseInfrared)}
-
-tvInfraredCodes = {
-u"左":(0x01, 0x21, 0xa1, 0xff, 0x0a),
-u"右":(0x02, 0x22, 0xa2, 0xff, 0x0a),
-u"上":(0x03, 0x23, 0xa3, 0xff, 0x0a),
-u"下":(0x04, 0x24, 0xa4, 0xff, 0x0a),
-u"大":(0x05, 0x25, 0xa5, 0xff, 0x0a),
-u"小":(0x06, 0x26, 0xa6, 0xff, 0x0a),
-u"确定":(0x07, 0x27, 0xa7, 0xff, 0x0a),
-u"返回":(0x08, 0x28, 0xa8, 0xff, 0x0a),
-u"主页":(0x09, 0x29, 0xa9, 0xff, 0x0a),
-u"开":(0x0a, 0x2a, 0xaa, 0xff, 0x0a),
-u"关":(0x0b, 0x2b, 0xab, 0xff, 0x0a)}
+# **************** Ctrl+C signal procedure ********************************
+def handler_sigint(signalnum, frame):
+    serialAma0.close()
+    print("process stop")
+    exit(0)
 
 
 if __name__ == '__main__':
     print("process begin")
-    signal.signal(signal.SIGINT, handler_sigint)
+
+    # key: hit words, value: v1-command process callback, v2-parameters parse callback
+    commands = {
+        (u"拍照", u"拍张照"):(commandImage,),
+        (u"拍视频", u"拍个视频"):(commandVideo,),
+        (u"左转",):(commandCameraLeft, parseAngle),
+        (u"右转",):(commandCameraRight, parseAngle),
+        (u"清缓存", u"清除缓存", u"清空缓存", u"清理缓存"):(commandCleanCache,),
+        (u"左边", u"右边", u"向上", u"上面", u"向下", u"下面", u"声音大", u"声音调大", u"声音小", u"声音调小",
+         u"确定", u"返回", u"主页", u"开电视", u"关电视", u"关闭电视"):(comamndTv, parseInfrared)}
+
+    tvInfraredCodes = {
+        u"左":(0x01, 0x21, 0xa1, 0xff, 0x0a),
+        u"右":(0x02, 0x22, 0xa2, 0xff, 0x0a),
+        u"上":(0x03, 0x23, 0xa3, 0xff, 0x0a),
+        u"下":(0x04, 0x24, 0xa4, 0xff, 0x0a),
+        u"大":(0x05, 0x25, 0xa5, 0xff, 0x0a),
+        u"小":(0x06, 0x26, 0xa6, 0xff, 0x0a),
+        u"确定":(0x07, 0x27, 0xa7, 0xff, 0x0a),
+        u"返回":(0x08, 0x28, 0xa8, 0xff, 0x0a),
+        u"主页":(0x09, 0x29, 0xa9, 0xff, 0x0a),
+        u"开":(0x0a, 0x2a, 0xaa, 0xff, 0x0a),
+        u"关":(0x0b, 0x2b, 0xab, 0xff, 0x0a)}
+
+    signal.signal(signal.SIGINT, handler_sigint) # Ctrl+C
+
+    sender = 'filehelper' # for wechat
+    snowboyEnable = False # select snowboy or speech_recognition
+    serialAma0 = serial.Serial("/dev/ttyAMA0", 9600)
+    if serialAma0.isOpen():
+        print("/dev/ttyAMA0 open success")
+
+    motor = Motor.Motor()
+    camera = Camera.Camera()
+    speech = Speech.Speech()
+    execute = Execute.Execute()
 
     for k, v in commands.items():
         execute.registerProcedure(k, v)
     execute.registerNotHittedProcedure(commandNotHitted)
 
-    threading.Thread(target=threadItChat).start()
     threading.Thread(target=threadSerial).start()
+    threading.Thread(target=threadItChat).start()
     if snowboyEnable:
         threading.Thread(target=threadSnowboy).start()
     else:
