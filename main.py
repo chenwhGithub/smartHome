@@ -72,8 +72,7 @@ def comamndTv(*infraredCode): # parse function return tuple
             str = str + "0" + temp[2]
         else:
             str = str + temp[2] + temp[3]
-    sendData = bytes.fromhex(str)
-    print("sendData", sendData) # sendData <class 'bytes'> b'\x01#\xab\xff\n'
+    sendData = bytes.fromhex(str) # sendData <class 'bytes'> b'\x01#\xab\xff\n'
     serialAma0.write(sendData)
 
 def commandNotHitted(recordText):
@@ -153,9 +152,9 @@ def threadSnowboy():
 # **************** serial procedure ***************************************
 def threadSerial():
     while True:
-        data = serialAma0.read(5)
+        data = serialAma0.read()
         recvData = data.hex()
-        print("recvData", recvData) # recvData <class 'str'> 0123abff0a
+        print("recvData", recvData) # recvData <class 'str'> 00~ff
 
 
 # **************** Ctrl+C signal procedure ********************************
@@ -179,17 +178,23 @@ if __name__ == '__main__':
          u"声音大点", u"声音小点", u"确定", u"返回", u"主页", u"打开电视", u"关闭电视"):(comamndTv, parseInfrared)}
 
     tvInfraredCodes = {
-        u"左":(0x01, 0x21, 0xa1, 0xff, 0x0a),
-        u"右":(0x02, 0x22, 0xa2, 0xff, 0x0a),
-        u"上":(0x03, 0x23, 0xa3, 0xff, 0x0a),
-        u"下":(0x04, 0x24, 0xa4, 0xff, 0x0a),
-        u"大":(0x05, 0x25, 0xa5, 0xff, 0x0a),
-        u"小":(0x06, 0x26, 0xa6, 0xff, 0x0a),
-        u"确定":(0x07, 0x27, 0xa7, 0xff, 0x0a),
-        u"返回":(0x08, 0x28, 0xa8, 0xff, 0x0a),
-        u"主页":(0x09, 0x29, 0xa9, 0xff, 0x0a),
-        u"开":(0x0a, 0x2a, 0xaa, 0xff, 0x0a),
-        u"关":(0x0b, 0x2b, 0xab, 0xff, 0x0a)}
+        # data1: a1-default serial address
+        # data2: f1-send infrared codes
+        #        f2-change serial address
+        #        f3-change baud
+        # data3/4: user code low/high 8b
+        # data5: command code
+        u"左":(0xa1, 0xf1, 0x4c, 0x65, 0x10),
+        u"右":(0xa1, 0xf1, 0x4c, 0x65, 0x11),
+        u"上":(0xa1, 0xf1, 0x4c, 0x65, 0x0b),
+        u"下":(0xa1, 0xf1, 0x4c, 0x65, 0x0e),
+        u"大":(0xa1, 0xf1, 0x4c, 0x65, 0x15),
+        u"小":(0xa1, 0xf1, 0x4c, 0x65, 0x1c),
+        u"确定":(0xa1, 0xf1, 0x4c, 0x65, 0x0d),
+        u"返回":(0xa1, 0xf1, 0x4c, 0x65, 0x1d),
+        u"主页":(0xa1, 0xf1, 0x4c, 0x65, 0x16),
+        u"开":(0xa1, 0xf1, 0x4c, 0x65, 0x0a),
+        u"关":(0xa1, 0xf1, 0x4c, 0x65, 0x0a)}
 
     signal.signal(signal.SIGINT, handler_sigint) # Ctrl+C
 
