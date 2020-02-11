@@ -12,22 +12,22 @@ from itchat.content import TEXT, RECORDING
 import serial
 import Motor
 import Camera
-import Speech
+import AiBaidu
 import Execute
 from snowboy import snowboydecoder
 
 
 # **************** commands callback **************************************
 def commandImage():
-    speech.Speech_play("./resources/camera.wav", "wav")
+    ai.Speech_play("./resources/camera.wav", "wav")
     fileName = camera.Camera_saveImage()
     itchat.send('@img@%s' %fileName, toUserName=sender)
-    speech.Speech_play("./resources/saveImageDone.mp3", "mp3") # u"照片拍摄完成，已发送到微信"
+    ai.Speech_play("./resources/saveImageDone.mp3", "mp3") # u"照片拍摄完成，已发送到微信"
 
 def commandVideo():
     fileName = camera.Camera_saveVideo(3000)
     itchat.send('@vid@%s' %fileName, toUserName=sender)
-    speech.Speech_play("./resources/saveVideoDone.mp3", "mp3") # u"视频拍摄完成，已发送到微信"
+    ai.Speech_play("./resources/saveVideoDone.mp3", "mp3") # u"视频拍摄完成，已发送到微信"
 
 def parseAngle(recordText):
     angleStr = re.sub(r'\D', "", recordText) # parse number
@@ -43,7 +43,7 @@ def commandCameraLeft(angle):
     threading.Thread(target=motorForwardThread, args=(angle,)).start()
     fileName = camera.Camera_saveVideo(angle*115) # 0.02*4*(angle/0.7)*1000
     itchat.send('@vid@%s' %fileName, toUserName=sender)
-    speech.Speech_play("./resources/cameraLeftDone.mp3", "mp3") # u"摄像头左转完成"
+    ai.Speech_play("./resources/cameraLeftDone.mp3", "mp3") # u"摄像头左转完成"
 
 def commandCameraRight(angle):
     def motorBackwardThread(angle):
@@ -52,12 +52,12 @@ def commandCameraRight(angle):
     threading.Thread(target=motorBackwardThread, args=(angle,)).start()
     fileName = camera.Camera_saveVideo(angle*115) # 0.02*4*(angle/0.7)*1000
     itchat.send('@vid@%s' %fileName, toUserName=sender)
-    speech.Speech_play("./resources/cameraRightDone.mp3", "mp3") # u"摄像头右转完成"
+    ai.Speech_play("./resources/cameraRightDone.mp3", "mp3") # u"摄像头右转完成"
 
 def commandCleanCache():
     subprocess.call("rm -f ./capture/*.jpg ./capture/*.mp4 ./capture/*.mp3 ./capture/*.wav ./capture/*.pcm", shell=True)
     subprocess.call("rm -f ./*.wav ./*.mp3", shell=True)
-    speech.Speech_play("./resources/cleancacheDone.mp3", "mp3") # u"缓存清理完成"
+    ai.Speech_play("./resources/cleancacheDone.mp3", "mp3") # u"缓存清理完成"
 
 def parseInfrared(recordText):
     for k, v in tvInfraredCodes.items():
@@ -76,10 +76,10 @@ def comamndTv(*infraredCode): # parse function return tuple
     serialAma0.write(sendData)
 
 def commandNotHitted(recordText):
-    respText = speech.Speech_emotibot(recordText)
-    respFile = speech.Speech_tts(respText)
+    respText = ai.Robot_emotibot(recordText)
+    respFile = ai.Speech_tts(respText)
     print("respText: %s" %respText)
-    speech.Speech_play(respFile, "mp3")
+    ai.Speech_play(respFile, "mp3")
 
 
 # **************** itchat procedure ***************************************
@@ -108,8 +108,8 @@ def recording_reply(msg):
 
     msg['Text'](msg['FileName']) # save mp3 file
     try:
-        recordFile = speech.Speech_convertMp3ToPcm(msg['FileName'])
-        recordText = speech.Speech_asr(recordFile, "pcm")
+        recordFile = ai.Speech_convertMp3ToPcm(msg['FileName'])
+        recordText = ai.Speech_asr(recordFile, "pcm")
         print("recordText: %s" %recordText)
         execute.process(recordText)
     except:
@@ -126,8 +126,8 @@ def threadItChat():
 def threadRecord():
     while True:
         try:
-            recordFile = speech.Speech_record()
-            recordText = speech.Speech_asr(recordFile, "wav")
+            recordFile = ai.Speech_record()
+            recordText = ai.Speech_asr(recordFile, "wav")
             print("recordText: %s" %recordText)
             execute.process(recordText)
         except:
@@ -137,7 +137,7 @@ def threadRecord():
 # **************** snowboy procedure **************************************
 def cbAudioRecorder(recordFile):
     try:
-        recordText = speech.Speech_asr(recordFile, "wav")
+        recordText = ai.Speech_asr(recordFile, "wav")
         print("recordText: %s" %recordText)
         execute.process(recordText)
     except:
@@ -206,7 +206,7 @@ if __name__ == '__main__':
 
     motor = Motor.Motor()
     camera = Camera.Camera()
-    speech = Speech.Speech()
+    ai = AiBaidu.AiBaidu()
     execute = Execute.Execute()
 
     for k, v in commands.items():

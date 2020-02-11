@@ -25,7 +25,7 @@ import sys
 import time
 from datetime import datetime
 
-class Speech:
+class AiBaidu:
 
     record_format       = paInt16
     record_rate         = 16000
@@ -49,7 +49,7 @@ class Speech:
     def __init__(self):
         # os.close(sys.stderr.fileno())
         self.capturePath = os.path.join(os.path.dirname(os.path.abspath(__file__)), "capture")
-        self.client = AipSpeech(self.AIP_APP_ID, self.AIP_API_KEY, self.AIP_SECRET_KEY)
+        self.clientSpeech = AipSpeech(self.AIP_APP_ID, self.AIP_API_KEY, self.AIP_SECRET_KEY)
         self.pa = PyAudio()
         self.r = sr.Recognizer()
         self.mic = sr.Microphone(sample_rate=self.record_rate) # format:paInt16(deadcode)
@@ -100,7 +100,7 @@ class Speech:
         try:
             with open(fileName, 'rb') as fp:
                 data = fp.read()
-            ret = self.client.asr(data, fileFormat, self.record_rate, {'dev_pid': 1536, })
+            ret = self.clientSpeech.asr(data, fileFormat, self.record_rate, {'dev_pid': 1536, })
             text = ret["result"][0]
             return text
         except:
@@ -112,7 +112,7 @@ class Speech:
         t = datetime.now()
         filename = self.capturePath + "/" + "MP3-%04d%02d%02d-%02d%02d%02d.mp3" %(t.year, t.month, t.day, t.hour, t.minute, t.second)
         try:
-            result = self.client.synthesis(text, 'zh', 1, {'vol':7, 'per':0, 'spd':5, 'pit':5}) # per:0-women 1-man 3-duxiaoyao 4-duyaya
+            result = self.clientSpeech.synthesis(text, 'zh', 1, {'vol':7, 'per':0, 'spd':5, 'pit':5}) # per:0-women 1-man 3-duxiaoyao 4-duyaya
             with open(filename, 'wb') as fp:
                 fp.write(result)
             return filename
@@ -127,56 +127,6 @@ class Speech:
             play(audio)
         except:
             print("Speech_play error: ", sys.exc_info()[0])
-            raise
-
-    # get response from text
-    def Speech_tuling(self, reqText):
-        req = {
-            "reqType": 0, # 0:text 1:picture 2:audio
-            "perception": {
-                "inputText": {
-                    "text": reqText
-                },
-                "selfInfo": {
-                    "location": {
-                        "city": "hangzhou",
-                        "province": "zhejiang",
-                        "street": "dongxin street"
-                    }
-                }
-            },
-            "userInfo": {
-                "apiKey": self.TULING_API_KEY,
-                "userId": "xiaoming"
-            }
-        }
-
-        try:
-            response = requests.request("post", self.TULING_API_URL, json=req, headers=self.TULING_HEADERS)
-            response_dict = json.loads(response.text)
-            respText = response_dict["results"][0]["values"]["text"]
-            return respText
-        except:
-            print("Speech_tuling error: ", sys.exc_info()[0])
-            raise
-
-    # get response from text
-    def Speech_emotibot(self, reqText):
-        req = {
-            "cmd": "chat",
-            "appid": self.EMOTIBOT_API_ID,
-            "userid": "xiaoming",
-            "text": reqText,
-            "location": "hangzhou"
-        }
-
-        try:
-            r = requests.post(self.EMOTIBOT_API_URL, params=req)
-            jsondata = json.loads(r.text)
-            respText = jsondata.get('data')[0].get('value')
-            return respText
-        except:
-            print("Speech_emotibot error: ", sys.exc_info()[0])
             raise
 
     # convert mp3 to pcm, for itChat RECORDING
@@ -205,4 +155,55 @@ class Speech:
         audio = AudioSegment.from_file(srcFile, format="mp3")
         audio.export(desFile, format="wav")
         return desFile
+
+
+    # get response from text
+    def Robot_tuling(self, reqText):
+        req = {
+            "reqType": 0, # 0:text 1:picture 2:audio
+            "perception": {
+                "inputText": {
+                    "text": reqText
+                },
+                "selfInfo": {
+                    "location": {
+                        "city": "hangzhou",
+                        "province": "zhejiang",
+                        "street": "dongxin street"
+                    }
+                }
+            },
+            "userInfo": {
+                "apiKey": self.TULING_API_KEY,
+                "userId": "xiaoming"
+            }
+        }
+
+        try:
+            resp = requests.request("post", self.TULING_API_URL, json=req, headers=self.TULING_HEADERS)
+            respJson = json.loads(resp.text)
+            respText = respJson["results"][0]["values"]["text"]
+            return respText
+        except:
+            print("Robot_tuling error: ", sys.exc_info()[0])
+            raise
+
+    # get response from text
+    def Robot_emotibot(self, reqText):
+        req = {
+            "cmd": "chat",
+            "appid": self.EMOTIBOT_API_ID,
+            "userid": "xiaoming",
+            "text": reqText,
+            "location": "hangzhou"
+        }
+
+        try:
+            resp = requests.request("post", self.EMOTIBOT_API_URL, params=req)
+            respJson = json.loads(resp.text)
+            respText = respJson["data"][0]["value"]
+            return respText
+        except:
+            print("Robot_emotibot error: ", sys.exc_info()[0])
+            raise
 
