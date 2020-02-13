@@ -13,7 +13,7 @@
 
 import wave
 from pyaudio import PyAudio, paInt16
-from aip import AipSpeech
+from aip import AipSpeech, AipOcr
 from pydub import AudioSegment
 from pydub.playback import play
 from ffmpy import FFmpeg
@@ -50,6 +50,7 @@ class AiBaidu:
         # os.close(sys.stderr.fileno())
         self.capturePath = os.path.join(os.path.dirname(os.path.abspath(__file__)), "capture")
         self.clientSpeech = AipSpeech(self.AIP_APP_ID, self.AIP_API_KEY, self.AIP_SECRET_KEY)
+        self.clientOcr = AipOcr(self.AIP_APP_ID, self.AIP_API_KEY, self.AIP_SECRET_KEY)
         self.pa = PyAudio()
         self.r = sr.Recognizer()
         self.mic = sr.Microphone(sample_rate=self.record_rate) # format:paInt16(deadcode)
@@ -205,5 +206,71 @@ class AiBaidu:
             return respText
         except:
             print("Robot_emotibot error: ", sys.exc_info()[0])
+            raise
+
+
+    # get words from image
+    def Ocr_getWords(self, fileName):
+        with open(fileName, 'rb') as fp:
+            image = fp.read()
+        try:
+            resp = self.clientOcr.basicGeneral(image);
+            words = ""
+            for item in resp["words_result"]:
+                words += item["words"]
+            return words
+        except:
+            print("Ocr_getWords error: ", sys.exc_info()[0])
+            raise
+
+    def Ocr_getIdCard(self, fileNameFront, fileNameBack):
+        card = {}
+        if fileNameFront:
+            with open(fileNameFront, 'rb') as fpFront:
+                imageFront = fpFront.read()
+            try:
+                respFront = self.clientOcr.idcard(imageFront, "front");
+                card["name"] = respFront["words_result"][u"姓名"]["words"]
+                card["gender"] = respFront["words_result"][u"性别"]["words"]
+                card["nation"] = respFront["words_result"][u"民族"]["words"]
+                card["birth"] = respFront["words_result"][u"出生"]["words"]
+                card["address"] = respFront["words_result"][u"住址"]["words"]
+                card["id"] = respFront["words_result"][u"公民身份号码"]["words"]
+            except:
+                print("Ocr_getIdCard front error: ", sys.exc_info()[0])
+                raise
+        if fileNameBack:
+            with open(fileNameBack, 'rb') as fpBack:
+                imageBack = fpBack.read()
+            try:
+                respBack = self.clientOcr.idcard(imageBack, "back");
+                card["issue"] = respBack["words_result"][u"签发机关"]["words"]
+                card["beginDate"] = respBack["words_result"][u"签发日期"]["words"]
+                card["EndDate"] = respBack["words_result"][u"失效日期"]["words"]
+            except:
+                print("Ocr_getIdCard back error: ", sys.exc_info()[0])
+                raise
+        return card
+
+    def Ocr_getPlateLicense(self, fileName):
+        with open(fileName, 'rb') as fp:
+            image = fp.read()
+        try:
+            resp = self.clientOcr.licensePlate(image);
+            return resp["words_result"]["number"]
+        except:
+            print("Ocr_getPlateLicense error: ", sys.exc_info()[0])
+            raise
+
+    def Ocr_getForm(self, fileName, resultType="excel"):
+        with open(fileName, 'rb') as fp:
+            image = fp.read()
+        try:
+            options = {}
+            options["result_type"] = resultType # excel/json
+            resp = self.clientOcr.tableRecognition(image, options)
+            return resp["result"]["result_data"]
+        except:
+            print("Ocr_getPlateLicense error: ", sys.exc_info()[0])
             raise
 
