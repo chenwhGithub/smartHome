@@ -107,7 +107,7 @@ class AiBaidu:
         try:
             with open(fileName, 'rb') as fp:
                 data = fp.read()
-            ret = self.clientSpeech.asr(data, fileFormat, self.record_rate, {'dev_pid': 1536, })
+            ret = self.clientSpeech.asr(data, fileFormat, self.record_rate, {'dev_pid': 1537, })
             text = ret["result"][0]
             return text
         except:
